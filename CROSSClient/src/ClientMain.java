@@ -1,7 +1,8 @@
 import java.io.IOException;
 import java.net.Socket;
 
-public class CROSSClientMain
+public class ClientMain
+
 {
 	static Socket cmd_socket;
 

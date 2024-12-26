@@ -3,6 +3,8 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/CROSS.iml" filepath="$PROJECT_DIR$/CROSS.iml" />
+      <module fileurl="file://$PROJECT_DIR$/CROSSClient/CROSSClient.iml" filepath="$PROJECT_DIR$/CROSSClient/CROSSClient.iml" />
+      <module fileurl="file://$PROJECT_DIR$/CROSSServer/CROSSServer.iml" filepath="$PROJECT_DIR$/CROSSServer/CROSSServer.iml" />
     </modules>
   </component>
 </project>

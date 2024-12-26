@@ -3,7 +3,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Properties;
 
-public class CROSSConfigs
+public class GlobalConfigs
 {
 	public static final String SERVER_IP = Get("server_ip");
 	public static final int CMD_PORT = GetInt("cmd_port");
@@ -29,6 +29,7 @@ public class CROSSConfigs
 	{
 		CheckAndLoad();
 
+		assert crossConfig != null;
 		return crossConfig.getProperty(propName);
 	}
 

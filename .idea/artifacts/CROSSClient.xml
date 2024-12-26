@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="CROSSClient">
+    <output-path>$PROJECT_DIR$/out/artifacts/CROSSClient</output-path>
+    <root id="archive" name="CROSSClient.jar">
+      <element id="module-output" name="CROSSClient" />
+      <element id="module-output" name="CROSS" />
+    </root>
+  </artifact>
+</component>
