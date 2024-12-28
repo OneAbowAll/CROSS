@@ -18,9 +18,15 @@ public class ServerMain
 
 		while(true)
 		{
-			try {
+			try
+			{
 				Socket clientSocket = acceptSocket.accept();
 				System.out.println("Ne ho trovato uno (～￣▽￣)～");
+
+				Connection clientConnection = new Connection(clientSocket);
+				Response resp = clientConnection.WaitResponse();
+
+				System.out.println(resp.toString());
 
 			} catch (IOException e) {
 				throw new RuntimeException(e);

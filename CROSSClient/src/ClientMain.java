@@ -20,10 +20,19 @@ public class ClientMain
 			break;
 		}while(true);
 
+
+		Connection cmdConnection = new Connection(cmd_socket);
+
 		System.out.println("Mi sono connesso ( •̀ .̫ •́ )✧)");
 		while(true)
 		{
-
-		}
+            try
+            {
+                cmdConnection.SendRequest(new Request(110, "LOGIN REQUEST"));
+            } catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
 	}
 }
