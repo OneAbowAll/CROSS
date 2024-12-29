@@ -1,12 +1,27 @@
-public class Request extends Message
+import com.google.gson.*;
+
+public abstract class Request
 {
-    protected Request(int code, String data)
+	protected transient RequestType type; //Non mi interessa che sia serializzato
+
+    protected Request(RequestType type)
     {
-        super(code, data);
+		this.type = type;
     }
+
+    public String Serialize()
+    {
+        Gson gson = new Gson();
+        return gson.toJson(this);
+    }
+
+	public Message ToMessage()
+	{
+		return new Message(type.GetValue(), Serialize());
+	}
 
     public String toString()
     {
-        return "Request " + super.toString();
+        return type + " " + Serialize();
     }
 }

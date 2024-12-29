@@ -1,3 +1,5 @@
+package ResponseCodes;
+
 public enum UpdateResponseCode
 {
     INVALID_PSW(101, "Invalid Password"),

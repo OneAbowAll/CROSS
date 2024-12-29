@@ -1,7 +1,7 @@
-public abstract class Message
+public class Message
 {
-    protected int code;
-    protected String data;
+    int code;
+    String data;
 
     protected Message(int code, String data)
     {

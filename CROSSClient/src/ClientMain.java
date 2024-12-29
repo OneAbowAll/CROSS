@@ -28,7 +28,9 @@ public class ClientMain
 		{
             try
             {
-                cmdConnection.SendRequest(new Request(110, "LOGIN REQUEST"));
+                cmdConnection.SendMessage(new LoginRequest("dado", "123"));
+				Message responseMsg = cmdConnection.WaitMessage();
+
             } catch (IOException e)
             {
                 throw new RuntimeException(e);

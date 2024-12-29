@@ -1,11 +1,15 @@
-public class LogoutResponseCode
+package ResponseCodes;
+
+public enum LoginResponseCode
 {
-    LOGIN_ERROR(101, "Username does not exist / Old password does not match");
+    PSW_MIS_USER_NEXIST(101, "Username does not exist / Password mismatch"),
+    USER_LOGGED(102, "User already logged in"),
+    OTHER_ERROR(103, "Other error");
 
     final int _value;
     final String _description;
 
-    LogoutResponseCode(int value, String description)
+    LoginResponseCode(int value, String description)
     {
         this._value = value;
         this._description = description;

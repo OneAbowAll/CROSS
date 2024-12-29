@@ -1,12 +1,12 @@
-public class Response extends Message
+public class Response
 {
-    protected Response(int code, String data)
+
+    public Response(int code)
     {
-        super(code, data);
     }
 
     public String toString()
     {
-        return "Response " + super.toString();
+        return "Response";
     }
 }

@@ -1,4 +1,4 @@
-public enum RequestCode
+public enum RequestType
 {
     LOGIN(201),
     REGISTER(202),
@@ -13,7 +13,7 @@ public enum RequestCode
     LOGOUT(400);
 
     final int _value;
-    RequestCode(int value)
+    RequestType(int value)
     {
         this._value = value;
     }

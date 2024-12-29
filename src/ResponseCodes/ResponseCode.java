@@ -1,3 +1,5 @@
+package ResponseCodes;
+
 public enum ResponseCode
 {
     OK(100),

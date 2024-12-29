@@ -1,13 +1,15 @@
-public enum LoginResponseCode
+package ResponseCodes;
+
+public enum RegisterResponseCode
 {
-    PSW_MIS_USER_NEXIST(101, "Username does not exist / Password mismatch"),
-    USER_LOGGED(102, "User already logged in"),
+    INVALID_PSW(101, "Invalid Password"),
+    USRNAME_NAVBL(102, "Username not available"),
     OTHER_ERROR(103, "Other error");
 
     final int _value;
     final String _description;
 
-    LoginResponseCode(int value, String description)
+    RegisterResponseCode(int value, String description)
     {
         this._value = value;
         this._description = description;
