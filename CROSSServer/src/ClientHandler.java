@@ -1,9 +1,12 @@
-import Messages.*;
-import Messages.Requests.*;
-import Messages.Responses.*;
+import Messages.Deserializer;
+import Messages.Message;
+import Messages.Requests.LoginRequest;
+import Messages.Requests.RegisterRequest;
+import Messages.Responses.LoginResponse;
+import Messages.Responses.RegisterResponse;
 
-import java.net.Socket;
 import java.io.IOException;
+import java.net.Socket;
 
 public class ClientHandler implements Runnable
 {
@@ -18,39 +21,117 @@ public class ClientHandler implements Runnable
     public void run()
     {
         //Login / Register
-
-        //while(true)
-        {
+		/*
+        while(true){
             //Wait for client request
-			try {
+			try
+			{
+				Message msg = connection.WaitMessage();
+				if(msg.code != RequestType.LOGIN.GetValue() || msg.code != RequestType.REGISTER.GetValue()  || msg.code != RequestType.LOGOUT.GetValue())
+				{
+					Message response = new Message(ResponseCode.UNEXPECTED_CMD.GetValue(),  "Unexpected command received. Please login/register first.");
+					connection.SendMessage(response);
+					continue;
+				}
+
+				//Try handle login request
+				try {
+					LoginRequest logReq = Requests.ToLoginRequest(msg);
+					System.out.println(logReq.toString());
+
+					break;
+				}
+				catch (UnexpectedRequestException _){}
+
+				//Try handle register request
+				try {
+					Messages.Requests.RegisterRequest regReq = Requests.ToRegisterRequest(msg);
+					System.out.println(regReq.toString());
+
+					break;
+				}
+				catch (UnexpectedRequestException _){}
+
+				//Try handle login request
+				try {
+					Messages.Requests.RegisterRequest regReq = Requests.ToRegisterRequest(msg);
+					System.out.println(regReq.toString());
+
+					break;
+				}
+				catch (UnexpectedRequestException _){}
+            }
+			catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		*/
+
+
+        //Client CmdLoop
+		boolean exit = false;
+		while(!exit)
+		{
+			try
+			{
 				Message msg = connection.WaitMessage();
 
-				//Im expecting a Messages.Requests.LoginRequest so I will try to deserialize the message into a Messages.Requests.LoginRequest
-				LoginRequest logReq = RequestDeserializer.ToLoginRequest(msg);
-				System.out.println(logReq.toString());
+				switch (msg.GetType())
+				{
+					case LOGIN -> {
+						LoginRequest logReq = Deserializer.ToLoginRequest(msg);
+						System.out.println(logReq.toString());
 
-                LoginResponse logResp = new LoginResponse(102);
-                connection.SendMessage(logResp.ToMessage());
+						LoginResponse logRep = new LoginResponse(102);
+						connection.SendMessage(logRep);
+					}
 
-                //Handle the request and create a response
-                connection.Close();
+					case REGISTER -> {
+						RegisterRequest regReq = Deserializer.ToRegisterRequest(msg);
+						System.out.println(regReq.toString());
 
-            }
-            catch (IOException e)
-            {
+						//Message response = new Message(ResponseCode.UNEXPECTED_CMD.GetValue(),  "Unexpected command received. You have already logged in.");
+						RegisterResponse regRep = new RegisterResponse(102);
+						connection.SendMessage(regRep);
+					}
+					/*
+					case UPDATE_CREDENTIALS -> {
+						continue;
+					}
+					case MARKET_ORDER -> {
+						continue;
+					}
+					case LIMIT_ORDER -> {
+						continue;
+					}
+					case STOP_ORDER -> {
+						continue;
+					}
+					case PRICE_HISTORY -> {
+						continue;
+					}
+					case CANCEL_ORDER -> {
+						continue;
+					}*/
+
+					case LOGOUT -> {
+						exit = true;
+					}
+
+					case null, default -> {
+						//Message response = new Message(ResponseCode.UNEXPECTED_CMD.GetValue(),  "Unexpected command received. Please login/register first.");
+						//connection.SendMessage(response);
+					}
+
+				}
+			}
+			catch (IOException e) {
 				throw new RuntimeException(e);
 			}
 		}
 
 
-        //Client CmdLoop
-        /*
-		while(true) {
-		}
-		*/
-
         //Close connection
-        /*
         try
         {
             connection.Close();
@@ -58,6 +139,6 @@ public class ClientHandler implements Runnable
         {
             throw new RuntimeException(e);
         }
-		*/
+
     }
 }

@@ -3,7 +3,7 @@ public class User
     String username;
     String password;
 
-    boolean isConnected;
+    transient boolean isConnected;
 
     public User(String username, String password)
     {

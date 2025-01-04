@@ -5,18 +5,18 @@ import com.google.gson.reflect.TypeToken;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class UsersManager
 {
     static final String USERS_FILE = "users.json";
-    static HashMap<String, User> users;
+    static ConcurrentHashMap<String, User> users;
 
     static
     {
         if(!Files.exists(Path.of(USERS_FILE)))
         {
-            users = new HashMap<>();
+            users = new ConcurrentHashMap<>();
         }
         else
         {
@@ -47,7 +47,6 @@ public class UsersManager
         try(FileWriter fw = new FileWriter(USERS_FILE);
             BufferedWriter bw = new BufferedWriter(fw))
         {
-
             String usersJson = gson.toJson(users);
             bw.write(usersJson);
         }
@@ -63,7 +62,7 @@ public class UsersManager
         try(FileReader fr = new FileReader(USERS_FILE);
             BufferedReader br = new BufferedReader(fr))
         {
-           users = gson.fromJson(br, new TypeToken<HashMap<String, User>>(){});
+           users = gson.fromJson(br, new TypeToken<ConcurrentHashMap<String, User>>(){});
         }
         catch (IOException e)
         {

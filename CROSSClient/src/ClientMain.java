@@ -1,8 +1,9 @@
-import LoginRequest;
 import Messages.Message;
+import Messages.Requests.*;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Scanner;
 
 public class ClientMain
 
@@ -25,21 +26,52 @@ public class ClientMain
 
 
 		Connection cmdConnection = new Connection(cmd_socket);
+		Scanner scanner = new Scanner(System.in);
 
 		System.out.println("Mi sono connesso ( •̀ .̫ •́ )✧)");
-		//while(true)
+		while(true)
 		{
             try
             {
-                cmdConnection.SendMessage(new LoginRequest("dado", "123"));
-				Message responseMsg = cmdConnection.WaitMessage();
-				System.out.println(responseMsg.toString());
+				String input = scanner.nextLine();
 
-				cmdConnection.Close();
-            } catch (IOException e)
+				if(input.equalsIgnoreCase("login"))
+				{
+					cmdConnection.SendMessage(new LoginRequest("dado", "123"));
+					Message responseMsg = cmdConnection.WaitMessage();
+					System.out.println(responseMsg.toString());
+				}
+
+				if(input.equalsIgnoreCase("register"))
+				{
+					cmdConnection.SendMessage(new RegisterRequest("dado", "123"));
+					Message responseMsg = cmdConnection.WaitMessage();
+					System.out.println(responseMsg.toString());
+				}
+
+				if(input.equalsIgnoreCase("exit"))
+				{
+					cmdConnection.SendMessage(new LogoutRequest());
+					System.out.println("Disconnecting from server...");
+
+					break;
+				}
+
+            }
+			catch (IOException e)
             {
                 throw new RuntimeException(e);
             }
+        }
+
+		//Close connection
+        try
+        {
+			cmdConnection.Close();
+			System.out.println("Successfully logged out.");
+        } catch (IOException e)
+        {
+            throw new RuntimeException("Something went wrong while logging out: "+ e);
         }
 
 	}

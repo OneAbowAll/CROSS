@@ -1,7 +1,6 @@
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -26,7 +25,6 @@ public class ServerMain
 
 		//Clients Thread pool
 		ExecutorService clientPool = Executors.newCachedThreadPool();
-
 		while(!acceptSocket.isClosed())
 		{
 			try {
