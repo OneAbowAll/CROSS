@@ -1,3 +1,6 @@
+import LoginRequest;
+import Messages.Message;
+
 import java.io.IOException;
 import java.net.Socket;
 
@@ -24,17 +27,20 @@ public class ClientMain
 		Connection cmdConnection = new Connection(cmd_socket);
 
 		System.out.println("Mi sono connesso ( •̀ .̫ •́ )✧)");
-		while(true)
+		//while(true)
 		{
             try
             {
                 cmdConnection.SendMessage(new LoginRequest("dado", "123"));
 				Message responseMsg = cmdConnection.WaitMessage();
+				System.out.println(responseMsg.toString());
 
+				cmdConnection.Close();
             } catch (IOException e)
             {
                 throw new RuntimeException(e);
             }
         }
+
 	}
 }

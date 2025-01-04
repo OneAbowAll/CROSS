@@ -1,9 +1,13 @@
-import java.io.IOException;
+import Messages.*;
+import Messages.Requests.*;
+import Messages.Responses.*;
+
 import java.net.Socket;
+import java.io.IOException;
 
 public class ClientHandler implements Runnable
 {
-    private Connection connection;
+    private final Connection connection;
 
     public ClientHandler(Socket clientSocket)
     {
@@ -15,18 +19,25 @@ public class ClientHandler implements Runnable
     {
         //Login / Register
 
-        while(true){
+        //while(true)
+        {
             //Wait for client request
 			try {
 				Message msg = connection.WaitMessage();
 
-				//Im expecting a LoginRequest so I will try to desirialize the message into a LoginRequest
-				LoginRequest logReq = Requests.ToLoginRequest(msg);
-
+				//Im expecting a Messages.Requests.LoginRequest so I will try to deserialize the message into a Messages.Requests.LoginRequest
+				LoginRequest logReq = RequestDeserializer.ToLoginRequest(msg);
 				System.out.println(logReq.toString());
-                //Handle the request and create a response
 
-            } catch (IOException e) {
+                LoginResponse logResp = new LoginResponse(102);
+                connection.SendMessage(logResp.ToMessage());
+
+                //Handle the request and create a response
+                connection.Close();
+
+            }
+            catch (IOException e)
+            {
 				throw new RuntimeException(e);
 			}
 		}

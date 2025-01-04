@@ -1,15 +1,17 @@
+package Messages;
+
 import com.google.gson.*;
 
-public abstract class Request
+public abstract class CrossMessage
 {
-	protected transient RequestType type; //Non mi interessa che sia serializzato
+	protected transient OperationType type; //Non mi interessa che sia serializzato
 
-    protected Request(RequestType type)
+    protected CrossMessage(OperationType type)
     {
 		this.type = type;
     }
 
-    public String Serialize()
+    private String Serialize()
     {
         Gson gson = new Gson();
         return gson.toJson(this);
@@ -17,7 +19,7 @@ public abstract class Request
 
 	public Message ToMessage()
 	{
-		return new Message(type.GetValue(), Serialize());
+		return new Message(type, Serialize());
 	}
 
     public String toString()

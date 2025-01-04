@@ -1,3 +1,7 @@
+import Messages.CrossMessage;
+import Messages.Message;
+import Messages.OperationType;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -23,20 +27,20 @@ public class Connection
         }
     }
 
-    public void SendMessage(Request request) throws IOException
+    public void SendMessage(CrossMessage request) throws IOException
     {
         SendMessage(request.ToMessage());
     }
 
     public void SendMessage(Message message) throws IOException
     {
-        output.writeInt(message.GetCode());
+        output.writeInt(message.GetType().GetValue());
         output.writeUTF(message.GetData());
     }
 
     public Message WaitMessage() throws IOException
 	{
-        return new Message(input.readInt(), input.readUTF());
+        return new Message(OperationType.Get(input.readInt()), input.readUTF());
     }
 
     //Really simple shorthand for what will probably be a very common sequence of commands.
@@ -47,7 +51,7 @@ public class Connection
     }
 
     /*
-    public void SendRequest(Request request) throws IOException
+    public void SendRequest(Messages.Requests.Request request) throws IOException
     {
         output.writeInt(request.GetCode());
         output.writeUTF(request.Serialize());
@@ -59,9 +63,9 @@ public class Connection
        // output.writeUTF(response.GetCode());
     }
 
-    public Request WaitRequest() throws IOException
+    public Messages.Requests.Request WaitRequest() throws IOException
     {
-        return new Request(input.readInt(), input.readUTF());
+        return new Messages.Requests.Request(input.readInt(), input.readUTF());
     }
 
     public Response WaitResponse() throws IOException

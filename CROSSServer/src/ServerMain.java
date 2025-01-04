@@ -17,9 +17,12 @@ public class ServerMain
 		try {
 			acceptSocket = new ServerSocket(GlobalConfigs.CMD_PORT);
 			acceptSocket.setSoTimeout(ServerConfigs.ACCEPT_TIMEOUT);
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+
+		UsersManager.RegisterUser("admin", "123");
 
 		//Clients Thread pool
 		ExecutorService clientPool = Executors.newCachedThreadPool();
@@ -32,14 +35,16 @@ public class ServerMain
 
 				clientPool.submit(new ClientHandler(clientSocket));
 
-
-			} catch (IOException e) {
-				throw new RuntimeException(e);
+			}
+			catch (IOException e) {
+				break;
 			}
 		}
 
 		clientPool.shutdown();
 		try { clientPool.awaitTermination(1, TimeUnit.MINUTES);}
 		catch (InterruptedException e) { throw new RuntimeException(e);	}
+
+		UsersManager.Save();
 	}
 }
