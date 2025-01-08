@@ -2,8 +2,7 @@ import Messages.Deserializer;
 import Messages.Message;
 import Messages.Requests.LoginRequest;
 import Messages.Requests.RegisterRequest;
-import Messages.Responses.LoginResponse;
-import Messages.Responses.RegisterResponse;
+import Messages.Requests.UpdateCredentialsRequest;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -20,57 +19,10 @@ public class ClientHandler implements Runnable
     @Override
     public void run()
     {
-        //Login / Register
-		/*
-        while(true){
-            //Wait for client request
-			try
-			{
-				Message msg = connection.WaitMessage();
-				if(msg.code != RequestType.LOGIN.GetValue() || msg.code != RequestType.REGISTER.GetValue()  || msg.code != RequestType.LOGOUT.GetValue())
-				{
-					Message response = new Message(ResponseCode.UNEXPECTED_CMD.GetValue(),  "Unexpected command received. Please login/register first.");
-					connection.SendMessage(response);
-					continue;
-				}
-
-				//Try handle login request
-				try {
-					LoginRequest logReq = Requests.ToLoginRequest(msg);
-					System.out.println(logReq.toString());
-
-					break;
-				}
-				catch (UnexpectedRequestException _){}
-
-				//Try handle register request
-				try {
-					Messages.Requests.RegisterRequest regReq = Requests.ToRegisterRequest(msg);
-					System.out.println(regReq.toString());
-
-					break;
-				}
-				catch (UnexpectedRequestException _){}
-
-				//Try handle login request
-				try {
-					Messages.Requests.RegisterRequest regReq = Requests.ToRegisterRequest(msg);
-					System.out.println(regReq.toString());
-
-					break;
-				}
-				catch (UnexpectedRequestException _){}
-            }
-			catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		}
-		*/
-
+		ClientSession session = new ClientSession();
 
         //Client CmdLoop
-		boolean exit = false;
-		while(!exit)
+		while(!connection.IsClosed())
 		{
 			try
 			{
@@ -80,24 +32,19 @@ public class ClientHandler implements Runnable
 				{
 					case LOGIN -> {
 						LoginRequest logReq = Deserializer.ToLoginRequest(msg);
-						System.out.println(logReq.toString());
-
-						LoginResponse logRep = new LoginResponse(102);
-						connection.SendMessage(logRep);
+						connection.SendMessage(session.TryLogin(logReq));
 					}
 
 					case REGISTER -> {
 						RegisterRequest regReq = Deserializer.ToRegisterRequest(msg);
-						System.out.println(regReq.toString());
+						connection.SendMessage(session.TryRegister(regReq));
+					}
 
-						//Message response = new Message(ResponseCode.UNEXPECTED_CMD.GetValue(),  "Unexpected command received. You have already logged in.");
-						RegisterResponse regRep = new RegisterResponse(102);
-						connection.SendMessage(regRep);
+					case UPDATE_CREDENTIALS -> {
+						UpdateCredentialsRequest updReq = Deserializer.ToUpdateCredentialsRequest(msg);
+						connection.SendMessage(session.TryUpdateCredentials(updReq));
 					}
 					/*
-					case UPDATE_CREDENTIALS -> {
-						continue;
-					}
 					case MARKET_ORDER -> {
 						continue;
 					}
@@ -115,7 +62,12 @@ public class ClientHandler implements Runnable
 					}*/
 
 					case LOGOUT -> {
-						exit = true;
+						session.Logout();
+					}
+
+					case EXIT -> {
+						session.Logout();
+						connection.Close();
 					}
 
 					case null, default -> {
@@ -128,6 +80,8 @@ public class ClientHandler implements Runnable
 			catch (IOException e) {
 				throw new RuntimeException(e);
 			}
+
+			System.out.println(session.toString());
 		}
 
 
@@ -135,10 +89,8 @@ public class ClientHandler implements Runnable
         try
         {
             connection.Close();
-        } catch (IOException e)
-        {
-            throw new RuntimeException(e);
         }
+		catch (IOException e){ throw new RuntimeException(e); }
 
     }
 }

@@ -1,14 +1,30 @@
 import Messages.Message;
+import Messages.OperationType;
 import Messages.Requests.*;
 
+import java.io.Console;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Scanner;
 
 public class ClientMain
 
 {
 	static Socket cmd_socket;
+	static HashMap<String, CrossCommand> commands;
+
+	static
+	{
+		commands = new HashMap<>();
+		commands.put("register", new RegisterCommand());
+		commands.put("login", new LoginCommand());
+		commands.put("updateCredentials", new UpdateCredentialsCommand());
+		commands.put("logout", new LogoutCommand());
+		commands.put("exit", new ExitCommand());
+		commands.put("help", new HelpCommand(commands));
+	}
 
 	public static void main(String[] args)
 	{
@@ -29,40 +45,26 @@ public class ClientMain
 		Scanner scanner = new Scanner(System.in);
 
 		System.out.println("Mi sono connesso ( •̀ .̫ •́ )✧)");
-		while(true)
+
+		while(!cmdConnection.IsClosed())
 		{
-            try
-            {
-				String input = scanner.nextLine();
+			String input = scanner.nextLine();
 
-				if(input.equalsIgnoreCase("login"))
-				{
-					cmdConnection.SendMessage(new LoginRequest("dado", "123"));
-					Message responseMsg = cmdConnection.WaitMessage();
-					System.out.println(responseMsg.toString());
-				}
+			//Un comando avrà il seguente formato -> command arg1 arg2 ...
+			String[] tokens = input.split(" ");
 
-				if(input.equalsIgnoreCase("register"))
-				{
-					cmdConnection.SendMessage(new RegisterRequest("dado", "123"));
-					Message responseMsg = cmdConnection.WaitMessage();
-					System.out.println(responseMsg.toString());
-				}
+			CrossCommand cmd = commands.get(tokens[0]);
+			if(cmd == null)
+			{
+				System.out.println("Unknown command: " + tokens[0]);
+				continue;
+			}
 
-				if(input.equalsIgnoreCase("exit"))
-				{
-					cmdConnection.SendMessage(new LogoutRequest());
-					System.out.println("Disconnecting from server...");
+			String[] cmdArgs = Arrays.copyOfRange(tokens, 1, tokens.length);
 
-					break;
-				}
-
-            }
-			catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
+			try { cmd.Execute(cmdConnection, cmdArgs); }
+			catch (IOException e) {	throw new RuntimeException(e); }
+		}
 
 		//Close connection
         try

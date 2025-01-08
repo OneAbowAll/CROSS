@@ -1,9 +1,9 @@
 public class User
 {
-    String username;
-    String password;
+    private final String username;
+    private String password;
 
-    transient boolean isConnected;
+    private transient volatile boolean isConnected;
 
     public User(String username, String password)
     {
@@ -21,14 +21,19 @@ public class User
         return password;
     }
 
+    public void SetPassword(String password)
+    {
+        this.password = password;
+    }
+
     public void SetConnected(boolean connected)
     {
-        isConnected = connected;
+        this.isConnected = connected;
     }
 
     public boolean IsConnected()
     {
-        return isConnected;
+        return this.isConnected;
     }
 
     @Override

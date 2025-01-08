@@ -12,7 +12,8 @@ public enum OperationType
     PRICE_HISTORY(311),
     CANCEL_ORDER(312),
 
-    LOGOUT(400);
+    LOGOUT(400),
+    EXIT(555);
 
     private final int _value;
     OperationType(int value)

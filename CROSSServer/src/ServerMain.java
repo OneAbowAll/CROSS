@@ -1,3 +1,6 @@
+import Exchange.History;
+import Exchange.OrderBook;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -11,6 +14,10 @@ public class ServerMain
 
 	public static void main(String[] args)
 	{
+		OrderBook orderBook = new OrderBook();
+		orderBook.TestPrint();
+
+		//Apri connessione al mondo
 		System.out.println("Ciao sono il server ヾ(•ω•`)o");
 		System.out.println("Ora mi metto ad ascoltare... ᕦ(ò_óˇ)ᕤ");
 		try {
@@ -20,8 +27,6 @@ public class ServerMain
 		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-
-		UsersManager.RegisterUser("admin", "123");
 
 		//Clients Thread pool
 		ExecutorService clientPool = Executors.newCachedThreadPool();

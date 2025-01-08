@@ -1,4 +1,8 @@
 {
+  "dado": {
+    "username": "dado",
+    "password": "123"
+  },
   "admin": {
     "username": "admin",
     "password": "123"

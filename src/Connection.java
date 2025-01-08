@@ -9,10 +9,12 @@ import java.net.Socket;
 
 public class Connection
 {
-    Socket socket;
+    private final Socket socket;
 
-    DataInputStream input;
-    DataOutputStream output;
+    private final DataInputStream input;
+    private final DataOutputStream output;
+
+    private boolean close;
 
     public Connection(Socket socket)
     {
@@ -25,6 +27,8 @@ public class Connection
         {
             throw new RuntimeException(e);
         }
+
+        close = false;
     }
 
     public void SendMessage(CrossMessage request) throws IOException
@@ -50,32 +54,14 @@ public class Connection
         return WaitMessage();
     }
 
-    /*
-    public void SendRequest(Messages.Requests.Request request) throws IOException
+    public boolean IsClosed()
     {
-        output.writeInt(request.GetCode());
-        output.writeUTF(request.Serialize());
+        return close;
     }
-
-    public void SendResponse(Response response) throws IOException
-    {
-        output.writeInt(response.GetCode());
-       // output.writeUTF(response.GetCode());
-    }
-
-    public Messages.Requests.Request WaitRequest() throws IOException
-    {
-        return new Messages.Requests.Request(input.readInt(), input.readUTF());
-    }
-
-    public Response WaitResponse() throws IOException
-    {
-        return new Response(input.readInt(), input.readUTF());
-    }
-    */
 
     public void Close() throws IOException
     {
+        close = true;
         socket.close();
     }
 }

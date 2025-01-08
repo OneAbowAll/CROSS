@@ -33,6 +33,14 @@ public class Deserializer
 		return gson.fromJson(message.GetData(), RegisterRequest.class);
 	}
 
+	public static UpdateCredentialsRequest ToUpdateCredentialsRequest(Message message)
+	{
+		if (message.GetType() != OperationType.UPDATE_CREDENTIALS)
+			throw new UnexpectedRequestException("The message is not an UpdateCredentials request");
+
+		return gson.fromJson(message.GetData(), UpdateCredentialsRequest.class);
+	}
+
 	//Responses --------------------------------------------------------------------------------------------------------
 	public static LoginResponse ToLoginResponse(Message message)
 	{
