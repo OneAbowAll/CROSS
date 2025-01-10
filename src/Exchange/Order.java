@@ -14,12 +14,14 @@ public class Order implements Comparable<Order>
 	private final OrderKind type;
 	private final OrderType orderType;
 
-	private final float size;
-	private final float price;
+	private int size;
+	private final int price;
 
 	private final LocalDateTime date;
 
-	public Order(int orderID, OrderKind kind, OrderType type, float size, float price, int timeStamp)
+	private String owner;
+
+	public Order(int orderID, OrderKind kind, OrderType type, int size, int price, int timeStamp, String owner)
 	{
 		this.orderID = orderID;
 		this.type = kind;
@@ -27,6 +29,7 @@ public class Order implements Comparable<Order>
 		this.size = size;
 		this.price = price;
 		this.date = LocalDateTime.ofInstant(Instant.ofEpochSecond(timeStamp), ZoneId.of("+0"));
+		this.owner = owner;
 	}
 
 	public LocalDateTime GetDate()
@@ -34,14 +37,27 @@ public class Order implements Comparable<Order>
 		return date;
 	}
 
-	public float GetPrice()
+	public int GetPrice()
 	{
 		return price;
 	}
 
-	public float GetSize()
+	public int GetSize()
 	{
 		return size;
+	}
+
+	/**
+	 * Prova a vendere amount monete dell'ordine.
+	 * @param amount Quante monete si vuole provare a vendere.
+	 * @return Quante monete sono state realmente vendute.
+	 */
+	public int TrySell(int amount)
+	{
+		int oldSize = size;
+		size = Math.max(size - amount, 0);
+
+		return oldSize - size;
 	}
 
 	public OrderType GetOrderType()
@@ -72,22 +88,28 @@ public class Order implements Comparable<Order>
 				" }";
 	}
 
-	public static Order Market(OrderKind type, int size, int price)
+	public static Order Market(OrderKind type, int size, int price, String owner)
 	{
-		return new Order(History.GetNextId(), type, OrderType.MARKET, (float) (size/1000.0), (float) (price/1000.0),
-				(int)LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(0)));
+		return new Order(History.GetNextId(), type, OrderType.MARKET, size, price,
+				(int)LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(0)), owner);
 	}
 
-	public static Order Limit(OrderKind type, int size, int price)
+	public static Order Limit(OrderKind type, int size, int price, String owner)
 	{
-		return new Order(History.GetNextId(), type, OrderType.LIMIT, (float) (size/1000.0), (float) (price/1000.0),
-				(int)LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(0)));
+		return new Order(History.GetNextId(), type, OrderType.LIMIT, size, price,
+				(int)LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(0)), owner);
 	}
 
-	public static Order Stop(OrderKind type, int size, int price)
+	public static Order Stop(OrderKind type, int size, int price, String owner)
 	{
-		return new Order(History.GetNextId(), type, OrderType.STOP, (float) (size/1000.0), (float) (price/1000.0),
-				(int)LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(0)));
+		return new Order(History.GetNextId(), type, OrderType.STOP, size, price,
+				(int)LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(0)), owner);
+	}
+
+	public static Order Null(OrderKind type)
+	{
+		return new Order(-1, type, OrderType.MARKET, 0, 0,
+				(int)LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(0)), "");
 	}
 
 	@Override

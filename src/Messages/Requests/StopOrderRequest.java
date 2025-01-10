@@ -3,7 +3,7 @@ package Messages.Requests;
 import Exchange.OrderKind;
 import Messages.OperationType;
 
-public class LimitOrderRequest extends Request
+public class StopOrderRequest extends Request
 {
 	String type;
 	int size;
@@ -11,13 +11,12 @@ public class LimitOrderRequest extends Request
 
 	String owner;
 
-	//Needed 4 correct gson deserialization (when using gson.fromJson(..., ...) this constructor gets used, not the one below).
-	private LimitOrderRequest()
+	private StopOrderRequest()
 	{
-		super(OperationType.LIMIT_ORDER);
+		super(OperationType.STOP_ORDER);
 	}
 
-	public LimitOrderRequest(OrderKind kind, int size, int price, String owner)
+	public StopOrderRequest(OrderKind kind, int size, int price, String owner)
 	{
 		this();
 		this.type = kind.GetName();

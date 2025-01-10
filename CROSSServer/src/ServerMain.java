@@ -1,4 +1,3 @@
-import Exchange.History;
 import Exchange.OrderBook;
 
 import java.io.IOException;
@@ -15,7 +14,7 @@ public class ServerMain
 	public static void main(String[] args)
 	{
 		OrderBook orderBook = new OrderBook();
-		orderBook.TestPrint();
+		orderBook.TestBid();
 
 		//Apri connessione al mondo
 		System.out.println("Ciao sono il server ヾ(•ω•`)o");

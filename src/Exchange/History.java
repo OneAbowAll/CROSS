@@ -44,7 +44,7 @@ public class History
 				//Type
 				name = reader.nextName();
 				assert(name.equals("type"));
-				OrderKind kind = (reader.nextString().equals("bid"))? OrderKind.BID:OrderKind.BUY;
+				OrderKind kind = (reader.nextString().equals("bid"))? OrderKind.BID:OrderKind.ASK;
 
 				//Exchange.OrderType
 				name = reader.nextName();
@@ -62,19 +62,20 @@ public class History
 				//Size
 				name = reader.nextName();
 				assert(name.equals("size"));
-				float size = (float) reader.nextInt() /1000;
+				int size = reader.nextInt();
 
 				//Price
 				name = reader.nextName();
 				assert(name.equals("price"));
-				float price = (float) reader.nextInt() /1000;
+				int price = reader.nextInt();
 
 				//Timestamp
 				name = reader.nextName();
 				assert(name.equals("timestamp"));
 				int timestamp = reader.nextInt();
 
-				Order order = new Order(id, kind, type, size, price, timestamp);
+				//Degli ordini completati non mi interessa sapere da chi è stato creato.
+				Order order = new Order(id, kind, type, size, price, timestamp, "");
 				history.add(order);
 
 				reader.endObject();
@@ -90,9 +91,14 @@ public class History
 
 	}
 
-	public static int GetNextId()
+	public static synchronized int GetNextId()
 	{
 		return nextOrderId++;
+	}
+
+	public static void AddOrder()
+	{
+
 	}
 
 	public static Order[] GetOrders(LocalDateTime to, LocalDateTime from)
