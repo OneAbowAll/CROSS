@@ -15,6 +15,7 @@ public abstract class OperationResponse extends CrossMessage
         this.errorMessage = errorMessage;
     }
 
+    public int GetResponseCode() { return response; }
     public String GetErrorMessage()
     {
         return errorMessage;

@@ -16,15 +16,15 @@ public class OrderBook
 	 */
 
 	//Lato Bid
-	private PriorityQueue<Order> limitOrdersBid;
-	private PriorityQueue<Order> stopOrdersBid;
+	private static PriorityQueue<Order> limitOrdersBid;
+	private static PriorityQueue<Order> stopOrdersBid;
 
 	//Lato Ask
-	private PriorityQueue<Order> limitOrdersAsk;
-	private PriorityQueue<Order> stopOrdersAsk;
+	private static PriorityQueue<Order> limitOrdersAsk;
+	private static PriorityQueue<Order> stopOrdersAsk;
 
 
-	public OrderBook()
+	static
 	{
 		limitOrdersBid = new PriorityQueue<>();
 		stopOrdersBid = new PriorityQueue<>();
@@ -46,45 +46,13 @@ public class OrderBook
 		stopOrdersAsk = new PriorityQueue<>();
 	}
 
-	void AddOrder(Order order)
+	public static String Info(PriorityQueue<Order> orderQueue)
 	{
-		switch (order.GetOrderType())
-		{
-			case LIMIT -> {
-				if(order.GetType() == OrderKind.BID)
-					limitOrdersBid.add(order);
-				else
-					limitOrdersAsk.add(order);
-			}
-
-			case STOP -> {
-				if(order.GetType() == OrderKind.BID)
-					stopOrdersBid.add(order);
-				else
-					stopOrdersAsk.add(order);
-			}
-
-			case MARKET -> throw new UnexpectedOrderException("Market order are not managed by the order book.");
-		}
-	}
-
-	public void Print()
-	{
-		System.out.format("%15s\n", "Ask Side");
-		Info(limitOrdersAsk);
-
-		System.out.println();
-
-		System.out.format("%15s\n", "Bid Side");
-		Info(limitOrdersBid);
-	}
-
-	public void Info(PriorityQueue<Order> orderQueue)
-	{
-		System.out.format("%10s%10s%10s\n", "Price", "Size", "Total");
+		StringBuilder info = new StringBuilder();
+		info.append(String.format("%10s%10s%10s\n", "Price", "Size", "Total"));
 
 		if(orderQueue.isEmpty())
-			return;
+			return info.toString();
 
 		PriorityQueue<Order> orders = new PriorityQueue<>(orderQueue);
 		Order order = orders.poll();
@@ -101,20 +69,21 @@ public class OrderBook
 			}
 			else
 			{
-				System.out.format("%10d%10d%10d\n", price, size, price * size);
+				info.append(String.format("%10d%10d%10d\n", price, size, price * size));
 
 				price = order.GetPrice();
 				size = order.GetSize();
 			}
 		}
 
-		System.out.format("%10d%10d%10d\n", price, size, price * size);
+		info.append(String.format("%10d%10d%10d\n", price, size, price * size));
+		return info.toString();
 	}
 
-	public void TestBid()
+	public static void TestBid()
 	{
 		System.out.println("Prima");
-		Print();
+		System.out.println(GetStatus());
 
 		System.out.println("--------------------------------------------------------");
 
@@ -122,43 +91,66 @@ public class OrderBook
 		Bid(new LimitOrderRequest(OrderKind.BID, 1000, 2500, ""));
 
 		System.out.println("Dopo");
-		Print();
+		System.out.println(GetStatus());
+	}
+
+	public static String GetStatus()
+	{
+		String status = "";
+		status += String.format("%20s\n", "Ask Side");
+
+		status += Info(limitOrdersAsk);
+
+		status += "-------------------------------------\n";
+
+		status += String.format("%20s\n", "Bid Side");
+		status += Info(limitOrdersBid);
+
+		return status;
 	}
 
 
-	public Order Bid(LimitOrderRequest limitRequest)
+	public static Order Bid(LimitOrderRequest limitRequest)
 	{
 		//Se è un Buy/Bid
 		if(limitRequest.GetType() == OrderKind.ASK)
 			throw new UnexpectedOrderException("To make a Bid you need a Bid-Request.");
 
-		//Trovo l'offerta di vendita migliore -> lato Ask
-		Order order = limitOrdersAsk.peek();
-
-		int coinsToSell = limitRequest.GetSize();
-
-		//Continua a pescare ordini finchè o finiscono o non riescono più a soddisfare l'offerta di acquisto.
-		while(order != null && (order.GetPrice() <= limitRequest.GetPrice()) && coinsToSell > 0)
+		int coinsToSell = 0;
+		synchronized (limitOrdersAsk)
 		{
-			int amountSold = order.TrySell(coinsToSell);
-			int total = order.GetPrice() * amountSold;
+			//Trovo l'offerta di vendita migliore -> lato Ask
+			Order order = limitOrdersAsk.peek();
 
-			coinsToSell -= amountSold;
+			//Teniamo traccia di quanto vogliamo vendere/quanto ci rimarrà da vendere(potenzialmente)
+			coinsToSell = limitRequest.GetSize();
 
-			//Se soddisfatto salva l'ordine
-			if (order.GetSize() == 0) {
-				//History.Save(order) or History.Add(order)
-				limitOrdersAsk.poll(); //Rimuovi se l'ordine è soddisfatto.
+			//Continua a pescare ordini finchè o finiscono o non riescono più a soddisfare l'offerta di acquisto.
+			while(order != null && (order.GetPrice() <= limitRequest.GetPrice()) && coinsToSell > 0)
+			{
+				int amountSold = order.TrySell(coinsToSell);
+
+				coinsToSell -= amountSold;
+
+				//Se soddisfatto salva l'ordine
+				if (order.GetSize() == 0) {
+					//History.Save(order) or History.Add(order)
+					limitOrdersAsk.poll(); //Rimuovi se l'ordine è soddisfatto.
+				}
+
+				order = limitOrdersAsk.peek();
 			}
-
-			order = limitOrdersAsk.peek();
 		}
 
 		//Se la richiesta di buy non è stata completata, aggiungo un nuovo LimitOrder al lato ask dove chiedo ciò che rimane al prezzo richiesto.
 		if(coinsToSell > 0)
 		{
 			Order newOrder = Order.Limit(OrderKind.BID, coinsToSell, limitRequest.GetPrice(), limitRequest.GetOwner());
-			limitOrdersBid.add(newOrder);
+
+			synchronized (limitOrdersBid)
+			{
+				limitOrdersBid.add(newOrder);
+			}
 
 			return newOrder;
 		}
@@ -175,74 +167,109 @@ public class OrderBook
 		return Order.Null(OrderKind.BID);
 	}
 
-	public Order Bid(MarketOrderRequest marketRequest)
+	public static Order Bid(MarketOrderRequest marketRequest)
 	{
 		//Se è un Buy/Bid
 		if(marketRequest.GetType() == OrderKind.ASK)
 			throw new UnexpectedOrderException("To make a Bid you need a Bid-Request.");
 
-		//Trovo l'offerta di vendita migliore -> lato Ask
-		Order order = limitOrdersAsk.peek();
-
-		if(order == null)
-			return Order.Null(OrderKind.BID);
-
-		//Vedo se soddisfa il MarketOrder
-		if(order.GetSize() >= marketRequest.GetSize())
+		int price = 0;
+		synchronized (limitOrdersAsk)
 		{
-			int total = order.GetPrice() * marketRequest.GetSize();
-			order.TrySell(marketRequest.GetSize());
+			if(limitOrdersAsk.isEmpty())
+				return Order.Null(OrderKind.BID);
 
-			//Se soddisfatto salva l'ordine
-			if (order.GetSize() == 0) {
-				//History.Save(order) or History.Add(order)
-				limitOrdersAsk.poll(); //Rimuovi se l'ordine è soddisfatto.
+			//Trovo l'offerta di vendita migliore -> lato Ask
+			PriorityQueue<Order> orders = new PriorityQueue<>(limitOrdersAsk);
+			Order order = orders.poll();
+
+			//Teniamo traccia di quanto vogliamo vendere
+			int coinsToSell = marketRequest.GetSize();
+			price = order.GetPrice();
+
+			//In un certo senso sto "simulando" la viabilità del MarketOrder.
+			while (order != null && order.GetPrice() == price && coinsToSell > 0)
+			{
+				coinsToSell = Math.max(0, coinsToSell - order.GetSize());
+				order = orders.poll();
 			}
 
-			Order finalOrder = Order.Market(OrderKind.BID, marketRequest.GetSize(), total, marketRequest.GetOwner());
-			//History.Save(finalOrder) or History.Add(finalOrder)
+			//Se esco dal loop precedente, significa che non ci sono abbastanza Asks(o in generale o con prezzo conveniente)
+			if (coinsToSell > 0)
+				return Order.Null(OrderKind.BID);
 
-			return finalOrder;
+			//In alternativa resetta coinToSell ed evadi realmente la MarketRequest e i LimitOrder rilevanti.
+			coinsToSell = marketRequest.GetSize();
+			order = limitOrdersAsk.peek();
+
+			while (order != null && order.GetPrice() == price && coinsToSell > 0)
+			{
+				int amountSold = order.TrySell(coinsToSell);
+
+				coinsToSell -= amountSold;
+
+				//Se soddisfatto salva l'ordine
+				if (order.GetSize() == 0)
+				{
+					//History.Save(order) or History.Add(order)
+					limitOrdersAsk.poll(); //Rimuovi se l'ordine è soddisfatto.
+				}
+
+				order = limitOrdersAsk.peek();
+			}
 		}
 
-		return Order.Null(OrderKind.BID);
+		//A questo punto so che il marketOrder è fattibile, quindi lo creo, lo salvo e lo resitutisco.
+		Order finalOrder = Order.Market(OrderKind.BID, marketRequest.GetSize(), price, marketRequest.GetOwner());
+		//History.Save(finalOrder) or History.Add(finalOrder)
+
+		return finalOrder;
 	}
 
 
-	public Order Ask(LimitOrderRequest limitRequest)
+	public static Order Ask(LimitOrderRequest limitRequest)
 	{
 		//Se è un Buy/Bid
 		if(limitRequest.GetType() == OrderKind.BID)
 			throw new UnexpectedOrderException("To make an Ask you need a Ask-Request.");
 
-		//Trovo l'offerta di vendita migliore -> lato Ask
-		Order order = limitOrdersBid.peek();
 
-		int coinsToSell = limitRequest.GetSize();
-
-		//Continua a pescare ordini finchè o finiscono o non riescono più a soddisfare l'offerta di acquisto.
-		while(order != null && (order.GetPrice() >= limitRequest.GetPrice()) && coinsToSell > 0)
+		int coinsToSell = 0;
+		synchronized (limitOrdersAsk)
 		{
-			int amountSold = order.TrySell(coinsToSell);
-			int total = order.GetPrice() * amountSold;
+			//Trovo l'offerta di vendita migliore -> lato Ask
+			Order order = limitOrdersBid.peek();
 
-			coinsToSell -= amountSold;
+			coinsToSell = limitRequest.GetSize();
 
-			//Se soddisfatto salva l'ordine
-			if (order.GetSize() == 0) {
-				//History.Save(order) or History.Add(order)
-				limitOrdersBid.poll(); //Rimuovi se l'ordine è soddisfatto.
+			//Continua a pescare ordini finchè o finiscono o non riescono più a soddisfare l'offerta di acquisto.
+			while (order != null && (order.GetPrice() >= limitRequest.GetPrice()) && coinsToSell > 0)
+			{
+				int amountSold = order.TrySell(coinsToSell);
+				int total = order.GetPrice() * amountSold;
+
+				coinsToSell -= amountSold;
+
+				//Se soddisfatto salva l'ordine
+				if (order.GetSize() == 0)
+				{
+					//History.Save(order) or History.Add(order)
+					limitOrdersBid.poll(); //Rimuovi se l'ordine è soddisfatto.
+				}
+
+				order = limitOrdersBid.peek();
 			}
-
-			order = limitOrdersBid.peek();
 		}
 
 		//Se la richiesta di buy non è stata completata, aggiungo un nuovo LimitOrder al lato ask dove chiedo ciò che rimane al prezzo richiesto.
 		if(coinsToSell > 0)
 		{
 			Order newOrder = Order.Limit(OrderKind.ASK, coinsToSell, limitRequest.GetPrice(), limitRequest.GetOwner());
-			limitOrdersAsk.add(newOrder);
 
+			synchronized (limitOrdersAsk)
+			{
+				limitOrdersAsk.add(newOrder);
+			}
 			return newOrder;
 		}
 
@@ -258,36 +285,62 @@ public class OrderBook
 		return Order.Null(OrderKind.BID);
 	}
 
-	public Order Ask(MarketOrderRequest marketRequest)
+	public static Order Ask(MarketOrderRequest marketRequest)
 	{
 		//Se è un Buy/Bid
 		if(marketRequest.GetType() == OrderKind.BID)
 			throw new UnexpectedOrderException("To make an Ask you need a Ask-Request.");
 
-		//Trovo l'offerta di vendita migliore -> lato Ask
-		Order order = limitOrdersBid.peek();
-
-		if(order == null)
-			return Order.Null(OrderKind.ASK);
-
-		//Vedo se soddisfa il MarketOrder
-		if(order.GetSize() >= marketRequest.GetSize())
+		int price = 0;
+		synchronized (limitOrdersAsk)
 		{
-			int total = order.GetPrice() * marketRequest.GetSize();
-			order.TrySell(marketRequest.GetSize());
+			if(limitOrdersAsk.isEmpty())
+				return Order.Null(OrderKind.BID);
 
-			//Se soddisfatto salva l'ordine
-			if (order.GetSize() == 0) {
-				//History.Save(order) or History.Add(order)
-				limitOrdersBid.poll(); //Rimuovi se l'ordine è soddisfatto.
+			//Trovo l'offerta di acquisto migliore -> lato Bid
+			PriorityQueue<Order> orders = new PriorityQueue<>(limitOrdersBid);
+			Order order = orders.poll();
+
+			//Teniamo traccia di quanto vogliamo vendere
+			int coinsToSell = marketRequest.GetSize();
+			price = order.GetPrice();
+
+			//In un certo senso sto "simulando" la viabilità del MarketOrder.
+			while (order != null && order.GetPrice() == price && coinsToSell > 0)
+			{
+				coinsToSell = Math.max(0, coinsToSell - order.GetSize());
+				order = orders.poll();
 			}
 
-			Order finalOrder = Order.Market(OrderKind.ASK, marketRequest.GetSize(), order.GetPrice(), marketRequest.GetOwner());
-			//History.Save(finalOrder) or History.Add(finalOrder)
+			//Se esco dal loop precedente, significa che non ci sono abbastanza Bids(o in generale o con prezzo conveniente)
+			if (coinsToSell > 0)
+				return Order.Null(OrderKind.ASK);
 
-			return finalOrder;
+			//In alternativa resetta coinToSell ed evadi realmente la MarketRequest e i LimitOrder rilevanti.
+			coinsToSell = marketRequest.GetSize();
+			order = limitOrdersBid.peek();
+
+			while (order != null && order.GetPrice() == price && coinsToSell > 0)
+			{
+				int amountSold = order.TrySell(coinsToSell);
+
+				coinsToSell -= amountSold;
+
+				//Se soddisfatto salva l'ordine
+				if (order.GetSize() == 0)
+				{
+					//History.Save(order) or History.Add(order)
+					limitOrdersBid.poll(); //Rimuovi se l'ordine è soddisfatto.
+				}
+
+				order = limitOrdersBid.peek();
+			}
 		}
 
-		return Order.Null(OrderKind.ASK);
+		//A questo punto so che il marketOrder è fattibile, quindi lo creo, lo salvo e lo resitutisco.
+		Order finalOrder = Order.Market(OrderKind.ASK, marketRequest.GetSize(), price, marketRequest.GetOwner());
+		//History.Save(finalOrder) or History.Add(finalOrder)
+
+		return finalOrder;
 	}
 }

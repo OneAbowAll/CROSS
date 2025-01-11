@@ -1,7 +1,5 @@
 package Messages;
-import Messages.Responses.LoginResponse;
-import Messages.Responses.RegisterResponse;
-import Messages.Responses.UpdateCredentialsResponse;
+import Messages.Responses.*;
 import com.google.gson.Gson;
 
 import Messages.Requests.*;
@@ -41,6 +39,14 @@ public class Deserializer
 		return gson.fromJson(message.GetData(), UpdateCredentialsRequest.class);
 	}
 
+	public static MarketOrderRequest ToMarketOrderRequest(Message message)
+	{
+		if(message.GetType() != OperationType.MARKET_ORDER)
+			throw new UnexpectedRequestException("The message is not a MarketOrder request");
+
+		return gson.fromJson(message.GetData(), MarketOrderRequest.class);
+	}
+
 	//Responses --------------------------------------------------------------------------------------------------------
 	public static LoginResponse ToLoginResponse(Message message)
 	{
@@ -64,5 +70,21 @@ public class Deserializer
 			throw new UnexpectedRequestException("The message is not a UpdateCredentials response");
 
 		return gson.fromJson(message.GetData(), UpdateCredentialsResponse.class);
+	}
+
+	public static MarketOrderResponse ToMarketOrderResponse(Message message)
+	{
+		if(message.GetType() != OperationType.MARKET_ORDER)
+			throw new UnexpectedRequestException("The message is not a MarketOrder response");
+
+		return gson.fromJson(message.GetData(), MarketOrderResponse.class);
+	}
+
+	public static StatusResponse ToStatusResponse(Message message)
+	{
+		if(message.GetType() != OperationType.GET_STATUS)
+			throw new UnexpectedRequestException("The message is not a Status response");
+
+		return gson.fromJson(message.GetData(), StatusResponse.class);
 	}
 }

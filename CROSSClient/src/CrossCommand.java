@@ -1,5 +1,3 @@
-import Messages.Message;
-
 import java.io.IOException;
 
 public abstract class CrossCommand

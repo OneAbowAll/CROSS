@@ -1,8 +1,6 @@
 import Messages.Deserializer;
 import Messages.Message;
-import Messages.Requests.LoginRequest;
 import Messages.Requests.UpdateCredentialsRequest;
-import Messages.Responses.LoginResponse;
 import Messages.Responses.UpdateCredentialsResponse;
 
 import java.io.IOException;

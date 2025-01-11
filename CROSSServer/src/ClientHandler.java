@@ -1,8 +1,14 @@
+import Exchange.Order;
+import Exchange.OrderBook;
+import Exchange.OrderKind;
 import Messages.Deserializer;
 import Messages.Message;
 import Messages.Requests.LoginRequest;
+import Messages.Requests.MarketOrderRequest;
 import Messages.Requests.RegisterRequest;
 import Messages.Requests.UpdateCredentialsRequest;
+import Messages.Responses.MarketOrderResponse;
+import Messages.Responses.StatusResponse;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -44,10 +50,17 @@ public class ClientHandler implements Runnable
 						UpdateCredentialsRequest updReq = Deserializer.ToUpdateCredentialsRequest(msg);
 						connection.SendMessage(session.TryUpdateCredentials(updReq));
 					}
-					/*
+
 					case MARKET_ORDER -> {
-						continue;
+						MarketOrderRequest mrkRequest = Deserializer.ToMarketOrderRequest(msg);
+						mrkRequest.SetOwner(session.GetUser().GetUsername());
+						Order result = OrderBook.Bid(mrkRequest);
+
+						MarketOrderResponse mrkResponse = new MarketOrderResponse(result);
+						connection.SendMessage(mrkResponse);
 					}
+
+					/*
 					case LIMIT_ORDER -> {
 						continue;
 					}
@@ -60,6 +73,12 @@ public class ClientHandler implements Runnable
 					case CANCEL_ORDER -> {
 						continue;
 					}*/
+
+					case GET_STATUS ->
+					{
+						StatusResponse statusResponse = new StatusResponse(OrderBook.GetStatus());
+						connection.SendMessage(statusResponse);
+					}
 
 					case LOGOUT -> {
 						session.Logout();

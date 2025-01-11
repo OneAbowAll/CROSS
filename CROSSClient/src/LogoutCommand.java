@@ -1,4 +1,3 @@
-import Messages.Requests.ExitRequest;
 import Messages.Requests.LogoutRequest;
 
 import java.io.IOException;

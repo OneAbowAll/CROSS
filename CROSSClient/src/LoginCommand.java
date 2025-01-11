@@ -1,7 +1,6 @@
 import Messages.Deserializer;
 import Messages.Message;
 import Messages.Requests.LoginRequest;
-import Messages.Requests.RegisterRequest;
 import Messages.Responses.LoginResponse;
 
 import java.io.IOException;
@@ -21,6 +20,9 @@ public class LoginCommand extends CrossCommand
 
 		Message msg = connection.SendAndWait(request.ToMessage());
 		LoginResponse response = Deserializer.ToLoginResponse(msg);
+
+		if(response.GetResponseCode() == 100)
+			ClientMain.loggedInUser = new User(args[0], args[1]);
 
 		System.out.println(response.GetErrorMessage());
 	}

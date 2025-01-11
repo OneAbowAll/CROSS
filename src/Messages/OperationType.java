@@ -11,6 +11,7 @@ public enum OperationType
     STOP_ORDER(303),
     PRICE_HISTORY(311),
     CANCEL_ORDER(312),
+    GET_STATUS(313),
 
     LOGOUT(400),
     EXIT(555);

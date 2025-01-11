@@ -1,4 +1,3 @@
-import Messages.Message;
 import Messages.Requests.ExitRequest;
 
 import java.io.IOException;

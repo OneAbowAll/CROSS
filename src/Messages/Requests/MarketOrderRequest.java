@@ -37,4 +37,6 @@ public class MarketOrderRequest extends Request
 	{
 		return owner;
 	}
+
+	public void SetOwner(String owner) { this.owner = owner; }
 }

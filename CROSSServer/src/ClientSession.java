@@ -3,10 +3,15 @@ import Messages.Responses.*;
 
 public class ClientSession
 {
-	private volatile User user;
+	private User user;
 
 	public ClientSession()
 	{
+	}
+
+	public User GetUser()
+	{
+		return user;
 	}
 
 	public LoginResponse TryLogin(LoginRequest logReq)
@@ -17,7 +22,7 @@ public class ClientSession
 		User foundUser = UsersManager.Find(logReq.GetUsername());
 		if(foundUser == null) { return new LoginResponse(101); }
 
-		if(foundUser.IsConnected()) {	return new LoginResponse(102); }
+		if(foundUser.IsConnected()) { return new LoginResponse(102); }
 
 		//Se è stato trovato un utente e la password combacia conferma il login per la sessione
 		if(foundUser.GetPassword().equals(logReq.GetPassword()))

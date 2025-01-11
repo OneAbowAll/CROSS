@@ -9,11 +9,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class History
 {
 	//TODO: RENDI QUESTA CLASSE USABILE DA PIU' THREADS
-	private static ArrayList<Order> history;
+	private static final ArrayList<Order> history;
 	private static int nextOrderId = 0;
 
 	static
@@ -96,14 +97,33 @@ public class History
 		return nextOrderId++;
 	}
 
-	public static void AddOrder()
+	public static void SaveOrder(Order order)
 	{
-
+		synchronized(history)
+		{
+			history.add(order);
+		}
 	}
 
-	public static Order[] GetOrders(LocalDateTime to, LocalDateTime from)
+	public static synchronized ArrayList<Order> GetOrders(LocalDateTime to, LocalDateTime from)
 	{
-		return new Order[0];
+		int indexFrom= Integer.MAX_VALUE;
+		int indexTo = -1;
+
+        for (int i = 0; i < history.size(); i++)
+        {
+            Order order = history.get(i);
+            if (order.GetDate().isAfter(to) && order.GetDate().isBefore(from))
+            {
+                if (indexFrom > i)
+					indexFrom = i;
+
+				if(indexTo < i)
+					indexTo = i;
+            }
+        }
+
+		return (ArrayList<Order>) history.subList(indexFrom, indexTo);
 	}
 
 	public static void TestPrint()

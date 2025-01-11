@@ -1,8 +1,3 @@
-import Messages.Message;
-import Messages.OperationType;
-import Messages.Requests.*;
-
-import java.io.Console;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Arrays;
@@ -15,12 +10,17 @@ public class ClientMain
 	static Socket cmd_socket;
 	static HashMap<String, CrossCommand> commands;
 
+	//Male, male
+	static User loggedInUser;
+
 	static
 	{
 		commands = new HashMap<>();
 		commands.put("register", new RegisterCommand());
 		commands.put("login", new LoginCommand());
 		commands.put("updateCredentials", new UpdateCredentialsCommand());
+		commands.put("market", new MarketOrderCommand());
+		commands.put("status", new StatusCommand());
 		commands.put("logout", new LogoutCommand());
 		commands.put("exit", new ExitCommand());
 		commands.put("help", new HelpCommand(commands));
