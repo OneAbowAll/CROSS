@@ -8,12 +8,11 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.time.Month;
+import java.util.*;
 
 public class History
 {
-	//TODO: RENDI QUESTA CLASSE USABILE DA PIU' THREADS
 	private static final ArrayList<Order> history;
 	private static int nextOrderId = 0;
 
@@ -105,25 +104,99 @@ public class History
 		}
 	}
 
-	public static synchronized ArrayList<Order> GetOrders(LocalDateTime to, LocalDateTime from)
+	public static synchronized ArrayList<Integer> GetOrdersRange(Month month)
 	{
-		int indexFrom= Integer.MAX_VALUE;
+		int indexFrom= -1;
 		int indexTo = -1;
 
         for (int i = 0; i < history.size(); i++)
         {
-            Order order = history.get(i);
-            if (order.GetDate().isAfter(to) && order.GetDate().isBefore(from))
-            {
-                if (indexFrom > i)
-					indexFrom = i;
+			Order order = history.get(i);
+			if(order.GetDate().getMonth() == month && indexFrom == -1)
+				indexFrom = i;
 
-				if(indexTo < i)
-					indexTo = i;
-            }
+			if(order.GetDate().getMonth() == month && indexFrom != -1)
+				indexTo = i;
         }
 
-		return (ArrayList<Order>) history.subList(indexFrom, indexTo);
+		int finalIndexFrom = indexFrom;
+		int finalIndexTo = indexTo;
+		return new ArrayList<>(){{ add(finalIndexFrom); add(finalIndexTo); }};
+	}
+
+	public static synchronized String GetPeriodInfo(Month month)
+	{
+		int daysInMonth = month.length(false);
+
+		StringBuilder periodInfo = new StringBuilder();
+		periodInfo.append(String.format("%20s\n", month.name()));
+
+		ArrayList<Integer> range = GetOrdersRange(month);
+
+		if(range.getFirst().equals(range.getLast()))
+		{
+			return "NO DATA AVAILABLE";
+		}
+
+		int currentDay = -1;
+		int askOpenPrice = -1;
+		int askClosePrice = -1;
+		int bidOpenPrice = -1;
+		int bidClosePrice = -1;
+
+		int askMinPrice = Integer.MAX_VALUE;
+		int askMaxPrice = -1;
+		int bidMinPrice = Integer.MAX_VALUE;
+		int bidMaxPrice = -1;
+
+		for (int i = range.getFirst(); i <= range.getLast(); i++)
+		{
+			Order order = history.get(i);
+			if(currentDay == -1)
+			{
+				currentDay = order.GetDate().getDayOfMonth();
+			}
+
+			if(order.GetType() == OrderKind.BID)
+			{
+				bidClosePrice = order.GetPrice();
+
+				if(bidOpenPrice == -1) bidOpenPrice = order.GetPrice();
+
+				if(bidMinPrice > order.GetPrice()) bidMinPrice = order.GetPrice();
+				if(bidMaxPrice < order.GetPrice()) bidMaxPrice = order.GetPrice();
+			}
+			else
+			{
+				askClosePrice = order.GetPrice();
+				if(askOpenPrice == -1) askOpenPrice = order.GetPrice();
+
+				if(askMinPrice > order.GetPrice()) askMinPrice = order.GetPrice();
+				if(askMaxPrice < order.GetPrice()) askMaxPrice = order.GetPrice();
+			}
+
+			if(order.GetDate().getDayOfMonth() != currentDay)
+			{
+				periodInfo.append(String.format("%2d => %2d %2d %2d %2d -- %2d %2d %2d %2d\n", currentDay,
+												askOpenPrice, askClosePrice, askMinPrice, askMaxPrice,
+												bidOpenPrice, bidClosePrice, bidMinPrice, bidMaxPrice));
+
+				currentDay = -1;
+				askOpenPrice = -1;
+				askClosePrice = -1;
+				bidOpenPrice = -1;
+				bidClosePrice = -1;
+
+				askMinPrice = -1;
+				askMaxPrice = Integer.MAX_VALUE;
+				bidMinPrice = -1;
+				bidMaxPrice = Integer.MAX_VALUE;
+
+			}
+		}
+
+
+		return periodInfo.toString();
 	}
 
 	public static void TestPrint()

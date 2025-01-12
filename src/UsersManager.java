@@ -25,14 +25,9 @@ public class UsersManager
         }
     }
 
-    public static synchronized boolean TryRegisterUser(String username, String password)
+    public static boolean TryRegisterUser(String username, String password)
     {
-        if(Exists(username))
-            return false;
-
-        User user = new User(username, password);
-        users.put(user.GetUsername(), user);
-        return true;
+        return users.putIfAbsent(username, new User(username, password)) == null;
     }
 
     public static User Find(String username)

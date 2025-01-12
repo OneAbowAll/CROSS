@@ -22,13 +22,12 @@ public class ClientSession
 		User foundUser = UsersManager.Find(logReq.GetUsername());
 		if(foundUser == null) { return new LoginResponse(101); }
 
-		if(foundUser.IsConnected()) { return new LoginResponse(102); }
-
 		//Se è stato trovato un utente e la password combacia conferma il login per la sessione
 		if(foundUser.GetPassword().equals(logReq.GetPassword()))
 		{
 			user = foundUser;
-			user.SetConnected(true);
+			if(!user.TryConnect())
+				return new LoginResponse(102);
 
 			return new LoginResponse(100);
 		}
@@ -56,28 +55,7 @@ public class ClientSession
 		User foundUser = UsersManager.Find(request.GetUsername());
 		if(foundUser == null) { return new UpdateCredentialsResponse(102); }
 
-		synchronized (foundUser)
-		{
-			if(foundUser.IsConnected())
-				return new UpdateCredentialsResponse(104);
-
-			//Se la password passata non combacia con quella attuale
-			if(!request.GetOldPassword().equals(foundUser.GetPassword()))
-				return  new UpdateCredentialsResponse(102);
-
-			//Se è uguale a quella vecchia
-			if(request.GetNewPassword().equals(foundUser.GetPassword()))
-				return new UpdateCredentialsResponse(103);
-
-			//Se la password è vuota non è valida
-			if(request.GetNewPassword().isBlank())
-				return new UpdateCredentialsResponse(101);
-
-			//Cambia password e conferma il cambiamento
-			foundUser.SetPassword(request.GetNewPassword());
-		}
-
-		return new UpdateCredentialsResponse(100);
+		return new UpdateCredentialsResponse(foundUser.TryChangePassword(request.GetOldPassword(), request.GetNewPassword()));
 	}
 
 	public void Logout()

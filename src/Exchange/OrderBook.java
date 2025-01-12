@@ -134,7 +134,7 @@ public class OrderBook
 
 				//Se soddisfatto salva l'ordine
 				if (order.GetSize() == 0) {
-					//History.Save(order) or History.Add(order)
+					History.SaveOrder(order);
 					limitOrdersAsk.poll(); //Rimuovi se l'ordine è soddisfatto.
 				}
 
@@ -159,7 +159,8 @@ public class OrderBook
 		if(coinsToSell == 0)
 		{
 			Order finalOrder = Order.Limit(OrderKind.BID, limitRequest.GetSize(), limitRequest.GetPrice(), limitRequest.GetOwner());
-			//History.Save(finalOrder) or History.Add(finalOrder)
+			History.SaveOrder(finalOrder);
+
 			return finalOrder;
 		}
 
@@ -211,7 +212,7 @@ public class OrderBook
 				//Se soddisfatto salva l'ordine
 				if (order.GetSize() == 0)
 				{
-					//History.Save(order) or History.Add(order)
+					History.SaveOrder(order);
 					limitOrdersAsk.poll(); //Rimuovi se l'ordine è soddisfatto.
 				}
 
@@ -221,11 +222,10 @@ public class OrderBook
 
 		//A questo punto so che il marketOrder è fattibile, quindi lo creo, lo salvo e lo resitutisco.
 		Order finalOrder = Order.Market(OrderKind.BID, marketRequest.GetSize(), price, marketRequest.GetOwner());
-		//History.Save(finalOrder) or History.Add(finalOrder)
+		History.SaveOrder(finalOrder);
 
 		return finalOrder;
 	}
-
 
 	public static Order Ask(LimitOrderRequest limitRequest)
 	{
@@ -253,7 +253,7 @@ public class OrderBook
 				//Se soddisfatto salva l'ordine
 				if (order.GetSize() == 0)
 				{
-					//History.Save(order) or History.Add(order)
+					History.SaveOrder(order);
 					limitOrdersBid.poll(); //Rimuovi se l'ordine è soddisfatto.
 				}
 
@@ -277,7 +277,7 @@ public class OrderBook
 		if(coinsToSell == 0)
 		{
 			Order finalOrder = Order.Limit(OrderKind.ASK, limitRequest.GetSize(), limitRequest.GetPrice(), limitRequest.GetOwner());
-			//History.Save(finalOrder) or History.Add(finalOrder)
+			History.SaveOrder(finalOrder);
 			return finalOrder;
 		}
 
@@ -329,7 +329,7 @@ public class OrderBook
 				//Se soddisfatto salva l'ordine
 				if (order.GetSize() == 0)
 				{
-					//History.Save(order) or History.Add(order)
+					History.SaveOrder(order);
 					limitOrdersBid.poll(); //Rimuovi se l'ordine è soddisfatto.
 				}
 
@@ -339,7 +339,7 @@ public class OrderBook
 
 		//A questo punto so che il marketOrder è fattibile, quindi lo creo, lo salvo e lo resitutisco.
 		Order finalOrder = Order.Market(OrderKind.ASK, marketRequest.GetSize(), price, marketRequest.GetOwner());
-		//History.Save(finalOrder) or History.Add(finalOrder)
+		History.SaveOrder(finalOrder);
 
 		return finalOrder;
 	}

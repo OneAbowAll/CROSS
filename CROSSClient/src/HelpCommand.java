@@ -30,6 +30,12 @@ public class HelpCommand extends CrossCommand
 			return;
 		}
 
+		if(commands.get(args[0]) == null)
+		{
+			System.out.println("Invalid argument. Usage: " + CmdUsage());
+			return;
+		}
+
 		System.out.println("Usage for " + args[0] +": " + commands.get(args[0]).CmdUsage());
 	}
 
