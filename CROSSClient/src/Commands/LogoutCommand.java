@@ -1,4 +1,7 @@
+package Commands;
+
 import Messages.Requests.LogoutRequest;
+import Systems.Connection;
 
 import java.io.IOException;
 
@@ -9,7 +12,7 @@ public class LogoutCommand extends CrossCommand
 	{
 		if(args.length != 0)
 		{
-			System.out.println("Invalid number of argument. Usage: " + CmdUsage());
+			System.out.println("Invalid number of arguments. Usage: " + CmdUsage());
 			return;
 		}
 

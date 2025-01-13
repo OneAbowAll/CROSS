@@ -6,8 +6,8 @@ import Messages.OperationType;
 public class StopOrderRequest extends Request
 {
 	String type;
-	int size;
-	int price;
+	long size;
+	long price;
 
 	String owner;
 
@@ -16,7 +16,7 @@ public class StopOrderRequest extends Request
 		super(OperationType.STOP_ORDER);
 	}
 
-	public StopOrderRequest(OrderKind kind, int size, int price, String owner)
+	public StopOrderRequest(OrderKind kind, long size, long price, String owner)
 	{
 		this();
 		this.type = kind.GetName();
@@ -30,12 +30,12 @@ public class StopOrderRequest extends Request
 		return OrderKind.Get(type);
 	}
 
-	public int GetSize()
+	public long GetSize()
 	{
 		return size;
 	}
 
-	public int GetPrice()
+	public long GetPrice()
 	{
 		return price;
 	}
@@ -44,4 +44,6 @@ public class StopOrderRequest extends Request
 	{
 		return owner;
 	}
+
+	public void SetOwner(String owner) { this.owner = owner; }
 }

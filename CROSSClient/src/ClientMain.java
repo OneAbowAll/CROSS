@@ -1,17 +1,20 @@
+import Commands.*;
+import Systems.Connection;
+import Systems.GlobalConfigs;
+import Systems.User;
+
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Scanner;
+import java.util.concurrent.TimeoutException;
 
 public class ClientMain
 
 {
 	static Socket cmd_socket;
 	static HashMap<String, CrossCommand> commands;
-
-	//Male, male
-	static User loggedInUser;
 
 	static
 	{
@@ -20,6 +23,10 @@ public class ClientMain
 		commands.put("login", new LoginCommand());
 		commands.put("updateCredentials", new UpdateCredentialsCommand());
 		commands.put("market", new MarketOrderCommand());
+		commands.put("limit", new LimitOrderCommand());
+		commands.put("stop", new StopOrderCommand());
+		commands.put("cancel", new CancelCommand());
+		commands.put("history", new HistoryCommand());
 		commands.put("status", new StatusCommand());
 		commands.put("logout", new LogoutCommand());
 		commands.put("exit", new ExitCommand());
@@ -42,6 +49,11 @@ public class ClientMain
 
 
 		Connection cmdConnection = new Connection(cmd_socket);
+		cmdConnection.SetTimeout(0);
+
+		ResponseListener listener = new ResponseListener(cmdConnection);
+		listener.start();
+
 		Scanner scanner = new Scanner(System.in);
 
 		System.out.println("Mi sono connesso ( •̀ .̫ •́ )✧)");
@@ -63,17 +75,18 @@ public class ClientMain
 			String[] cmdArgs = Arrays.copyOfRange(tokens, 1, tokens.length);
 
 			try { cmd.Execute(cmdConnection, cmdArgs); }
-			catch (IOException e) {	throw new RuntimeException(e); }
+			catch (IOException e){ break; }
+			catch (TimeoutException _){ continue; }
 		}
 
 		//Close connection
         try
         {
 			cmdConnection.Close();
-			System.out.println("Successfully logged out.");
+			System.out.println("Systems.Connection closed.");
         } catch (IOException e)
         {
-            throw new RuntimeException("Something went wrong while logging out: "+ e);
+            throw new RuntimeException("Something went wrong while closing connection: "+ e);
         }
 
 	}

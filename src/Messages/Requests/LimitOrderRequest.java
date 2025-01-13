@@ -6,18 +6,15 @@ import Messages.OperationType;
 public class LimitOrderRequest extends Request
 {
 	String type;
-	int size;
-	int price;
+	long size;
+	long price;
 
 	String owner;
 
 	//Needed 4 correct gson deserialization (when using gson.fromJson(..., ...) this constructor gets used, not the one below).
-	private LimitOrderRequest()
-	{
-		super(OperationType.LIMIT_ORDER);
-	}
+	private LimitOrderRequest(){ super(OperationType.LIMIT_ORDER); }
 
-	public LimitOrderRequest(OrderKind kind, int size, int price, String owner)
+	public LimitOrderRequest(OrderKind kind, long size, long price, String owner)
 	{
 		this();
 		this.type = kind.GetName();
@@ -31,12 +28,12 @@ public class LimitOrderRequest extends Request
 		return OrderKind.Get(type);
 	}
 
-	public int GetSize()
+	public long GetSize()
 	{
 		return size;
 	}
 
-	public int GetPrice()
+	public long GetPrice()
 	{
 		return price;
 	}
@@ -45,4 +42,6 @@ public class LimitOrderRequest extends Request
 	{
 		return owner;
 	}
+
+	public void SetOwner(String owner) { this.owner = owner; }
 }

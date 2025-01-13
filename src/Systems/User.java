@@ -1,4 +1,4 @@
-import Messages.Responses.UpdateCredentialsResponse;
+package Systems;
 
 public class User
 {
@@ -66,7 +66,7 @@ public class User
     @Override
     public String toString()
     {
-        return "User{" +
+        return "Systems.User{" +
                 "username='" + username + '\'' +
                 ", password='" + password + '\'' +
                 '}';

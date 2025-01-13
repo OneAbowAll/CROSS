@@ -6,7 +6,7 @@ import Messages.OperationType;
 public class MarketOrderRequest extends Request
 {
 	String type;
-	int size;
+	long size;
 	String owner;
 
 	//Needed 4 correct gson deserialization (when using gson.fromJson(..., ...) this constructor gets used, not the one below).
@@ -15,7 +15,7 @@ public class MarketOrderRequest extends Request
 		super(OperationType.MARKET_ORDER);
 	}
 
-	public MarketOrderRequest(OrderKind kind, int size, String owner)
+	public MarketOrderRequest(OrderKind kind, long size, String owner)
 	{
 		this();
 		this.type = kind.GetName();
@@ -28,7 +28,7 @@ public class MarketOrderRequest extends Request
 		return OrderKind.Get(type);
 	}
 
-	public int GetSize()
+	public long GetSize()
 	{
 		return size;
 	}

@@ -14,14 +14,14 @@ public class Order implements Comparable<Order>
 	private final OrderKind type;
 	private final OrderType orderType;
 
-	private int size;
-	private final int price;
+	private long size;
+	private final long price;
 
 	private final LocalDateTime date;
 
 	private String owner;
 
-	public Order(int orderID, OrderKind kind, OrderType type, int size, int price, int timeStamp, String owner)
+	public Order(int orderID, OrderKind kind, OrderType type, long size, long price, int timeStamp, String owner)
 	{
 		this.orderID = orderID;
 		this.type = kind;
@@ -37,12 +37,12 @@ public class Order implements Comparable<Order>
 		return date;
 	}
 
-	public int GetPrice()
+	public long GetPrice()
 	{
 		return price;
 	}
 
-	public int GetSize()
+	public long GetSize()
 	{
 		return size;
 	}
@@ -52,9 +52,9 @@ public class Order implements Comparable<Order>
 	 * @param amount Quante monete si vuole provare a vendere.
 	 * @return Quante monete sono state realmente vendute.
 	 */
-	public int TrySell(int amount)
+	public long TrySell(long amount)
 	{
-		int oldSize = size;
+		long oldSize = size;
 		size = Math.max(size - amount, 0);
 
 		return oldSize - size;
@@ -75,6 +75,11 @@ public class Order implements Comparable<Order>
 		return orderID;
 	}
 
+	public String GetOwner()
+	{
+		return owner;
+	}
+
 	@Override
 	public String toString()
 	{
@@ -88,19 +93,19 @@ public class Order implements Comparable<Order>
 				" }";
 	}
 
-	public static Order Market(OrderKind type, int size, int price, String owner)
+	public static Order Market(OrderKind type, long size, long price, String owner)
 	{
 		return new Order(History.GetNextId(), type, OrderType.MARKET, size, price,
 				(int)LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(0)), owner);
 	}
 
-	public static Order Limit(OrderKind type, int size, int price, String owner)
+	public static Order Limit(OrderKind type, long size, long price, String owner)
 	{
 		return new Order(History.GetNextId(), type, OrderType.LIMIT, size, price,
 				(int)LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(0)), owner);
 	}
 
-	public static Order Stop(OrderKind type, int size, int price, String owner)
+	public static Order Stop(OrderKind type, long size, long price, String owner)
 	{
 		return new Order(History.GetNextId(), type, OrderType.STOP, size, price,
 				(int)LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(0)), owner);

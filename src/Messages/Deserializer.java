@@ -47,6 +47,38 @@ public class Deserializer
 		return gson.fromJson(message.GetData(), MarketOrderRequest.class);
 	}
 
+	public static LimitOrderRequest ToLimitOrderRequest(Message message)
+	{
+		if(message.GetType() != OperationType.LIMIT_ORDER)
+			throw new UnexpectedRequestException("The message is not a LimitOrder request");
+
+		return gson.fromJson(message.GetData(), LimitOrderRequest.class);
+	}
+
+	public static StopOrderRequest ToStopOrderRequest(Message message)
+	{
+		if(message.GetType() != OperationType.STOP_ORDER)
+			throw new UnexpectedRequestException("The message is not a StopOrder request");
+
+		return gson.fromJson(message.GetData(), StopOrderRequest.class);
+	}
+
+	public static CancelRequest ToCancelRequest(Message message)
+	{
+		if (message.GetType() != OperationType.CANCEL_ORDER)
+			throw new UnexpectedRequestException("The message is not a Cancel request");
+
+		return gson.fromJson(message.GetData(), CancelRequest.class);
+	}
+
+	public static HistoryRequest ToHistoryRequest(Message message)
+	{
+		if(message.GetType() != OperationType.PRICE_HISTORY)
+			throw new UnexpectedRequestException("The message is not a History response");
+
+		return gson.fromJson(message.GetData(), HistoryRequest.class);
+	}
+
 	//Responses --------------------------------------------------------------------------------------------------------
 	public static LoginResponse ToLoginResponse(Message message)
 	{
@@ -80,11 +112,51 @@ public class Deserializer
 		return gson.fromJson(message.GetData(), MarketOrderResponse.class);
 	}
 
+	public static LimitOrderResponse ToLimitOrderResponse(Message message)
+	{
+		if(message.GetType() != OperationType.LIMIT_ORDER)
+			throw new UnexpectedRequestException("The message is not a LimitOrder response");
+
+		return gson.fromJson(message.GetData(), LimitOrderResponse.class);
+	}
+
+	public static StopOrderResponse ToStopOrderResponse(Message message)
+	{
+		if(message.GetType() != OperationType.STOP_ORDER)
+			throw new UnexpectedRequestException("The message is not a StopOrder response");
+
+		return gson.fromJson(message.GetData(), StopOrderResponse.class);
+	}
+
+	public static CancelResponse ToCancelResponse(Message message)
+	{
+		if(message.GetType() != OperationType.CANCEL_ORDER)
+			throw new UnexpectedRequestException("The message is not a Cancel response");
+
+		return gson.fromJson(message.GetData(), CancelResponse.class);
+	}
+
 	public static StatusResponse ToStatusResponse(Message message)
 	{
 		if(message.GetType() != OperationType.GET_STATUS)
 			throw new UnexpectedRequestException("The message is not a Status response");
 
 		return gson.fromJson(message.GetData(), StatusResponse.class);
+	}
+
+	public static HistoryResponse ToHistoryResponse(Message message)
+	{
+		if(message.GetType() != OperationType.PRICE_HISTORY)
+			throw new UnexpectedRequestException("The message is not a History response");
+
+		return gson.fromJson(message.GetData(), HistoryResponse.class);
+	}
+
+	public static LogoutResponse ToLogoutResponse(Message message)
+	{
+		if(message.GetType() != OperationType.LOGOUT)
+			throw new UnexpectedRequestException("The message is not a Logout response");
+
+		return gson.fromJson(message.GetData(), LogoutResponse.class);
 	}
 }

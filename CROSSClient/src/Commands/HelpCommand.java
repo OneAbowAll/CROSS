@@ -1,3 +1,7 @@
+package Commands;
+
+import Systems.Connection;
+
 import java.io.IOException;
 import java.util.HashMap;
 
@@ -26,7 +30,7 @@ public class HelpCommand extends CrossCommand
 
 		if(args.length > 1)
 		{
-			System.out.println("Invalid number of argument. Usage: " + CmdUsage());
+			System.out.println("Invalid number of arguments. Usage: " + CmdUsage());
 			return;
 		}
 

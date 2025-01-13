@@ -16,37 +16,38 @@ public class OrderBook
 	 */
 
 	//Lato Bid
-	private static PriorityQueue<Order> limitOrdersBid;
-	private static PriorityQueue<Order> stopOrdersBid;
+	private static final PriorityQueue<Order> limitOrdersBid;
+	private static final ArrayList<Order> stopOrdersBid;
 
 	//Lato Ask
-	private static PriorityQueue<Order> limitOrdersAsk;
-	private static PriorityQueue<Order> stopOrdersAsk;
+	private static final PriorityQueue<Order> limitOrdersAsk;
+	private static final ArrayList<Order> stopOrdersAsk;
 
 
 	static
 	{
 		limitOrdersBid = new PriorityQueue<>();
-		stopOrdersBid = new PriorityQueue<>();
+		stopOrdersBid = new ArrayList<>();
 
 		limitOrdersAsk = new PriorityQueue<>();
 		try
 		{
 			limitOrdersAsk.add(Order.Limit(OrderKind.ASK, 100, 2500, ""));
-			Thread.sleep(2000);
+			Thread.sleep(1000);
 			limitOrdersAsk.add(Order.Limit(OrderKind.ASK, 200, 2500, ""));
-			Thread.sleep(2000);
+			Thread.sleep(1000);
 			limitOrdersAsk.add(Order.Limit(OrderKind.ASK, 600, 2200, ""));
-			Thread.sleep(2000);
+			Thread.sleep(1000);
 			limitOrdersAsk.add(Order.Limit(OrderKind.ASK, 100, 8000, ""));
 		}
 		catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}
-		stopOrdersAsk = new PriorityQueue<>();
+
+		stopOrdersAsk = new ArrayList<>();
 	}
 
-	public static String Info(PriorityQueue<Order> orderQueue)
+	public static synchronized String Info(PriorityQueue<Order> orderQueue)
 	{
 		StringBuilder info = new StringBuilder();
 		info.append(String.format("%10s%10s%10s\n", "Price", "Size", "Total"));
@@ -57,8 +58,8 @@ public class OrderBook
 		PriorityQueue<Order> orders = new PriorityQueue<>(orderQueue);
 		Order order = orders.poll();
 
-		int price = order.GetPrice();
-		int size = order.GetSize();
+		long price = order.GetPrice();
+		long size = order.GetSize();
 
 		while(!orders.isEmpty())
 		{
@@ -97,18 +98,135 @@ public class OrderBook
 	public static String GetStatus()
 	{
 		String status = "";
-		status += String.format("%20s\n", "Ask Side");
+		status += String.format("%24s\n", "Limit Orders");
+		status += String.format("%22s\n", "Ask Side");
 
 		status += Info(limitOrdersAsk);
 
 		status += "-------------------------------------\n";
+		status += String.format("Bid/Ask Spread: %5d\n", GetBestBuyPrice() - GetBestSellPrice());
+		status += "-------------------------------------\n";
 
-		status += String.format("%20s\n", "Bid Side");
+		status += String.format("%22s\n", "Bid Side");
 		status += Info(limitOrdersBid);
+
+		status += "\n\n";
+		status += String.format("%24s\n", "Stop Orders");
+		status += GetStopsStatus();
 
 		return status;
 	}
 
+	public static String GetStopsStatus()
+	{
+		StringBuilder status = new StringBuilder();
+		status.append(String.format("%22s\n", "Ask Side"));
+
+		synchronized (stopOrdersAsk)
+		{
+			status.append(String.format("%10s%10s%10s\n", "StopPrice", "Size", "User"));
+			for (Order o: stopOrdersAsk)
+			{
+				status.append(String.format("%10d%10d%10s\n", o.GetPrice(), o.GetSize(), o.GetOwner()));
+			}
+		}
+
+		status.append("-------------------------------------\n");
+
+		status.append(String.format("%22s\n", "Bid Side"));
+		synchronized (stopOrdersBid)
+		{
+			status.append(String.format("%10s%10s%10s\n", "StopPrice", "Size", "User"));
+			for (Order o: stopOrdersBid)
+			{
+				status.append(String.format("%10d%10d%10s\n", o.GetPrice(), o.GetSize(), o.GetOwner()));
+			}
+		}
+
+		return status.toString();
+	}
+
+	public synchronized static long GetBestBuyPrice()
+	{
+		if(limitOrdersAsk.isEmpty()) return 0;
+
+		return limitOrdersAsk.peek().GetPrice();
+	}
+
+	public synchronized static long GetBestSellPrice()
+	{
+		if(limitOrdersBid.isEmpty()) return 0;
+
+		return limitOrdersBid.peek().GetPrice();
+	}
+
+	public static void TryCompleteStops()
+	{
+		//Try complete the bidOrders
+		synchronized (stopOrdersBid)
+		{
+			ArrayList<Order> removeStops = new ArrayList<>();
+
+			for (Order order : stopOrdersBid)
+			{
+				//Se il prezzo di vendita supera la soglia
+				if(order.GetPrice() >= GetBestBuyPrice() && GetBestBuyPrice() != 0) {
+					//Prova a fare un marketOrder, se ha successo bene se no niente
+					Order result = Bid(new MarketOrderRequest(OrderKind.BID, order.GetSize(), ""));
+
+					if(result.GetOrderID() == -1)
+					{
+						//Notifica l'utente che non è andata a buon fine :(
+						System.out.println("OrderBook.java riga:145");
+						System.out.println("Rimosso, fallito market order \n "+ order.toString());
+					}
+					else
+					{
+						//Notifica l'utente che è andata a buon fine :(
+						//In alternativa salva l'ordine
+						System.out.println("Rimosso, tutto ok \n "+ order.toString());
+						History.SaveOrder(order);
+					}
+
+					//In entrambi i casi si rimuove lo stop order
+					removeStops.add(order);
+				}
+			}
+
+			stopOrdersBid.removeAll(removeStops);
+		}
+
+		//Try complete the askOrders
+		synchronized (stopOrdersAsk)
+		{
+			ArrayList<Order> removeStops = new ArrayList<>();
+
+			for (Order order : stopOrdersAsk)
+			{
+				//Se il prezzo di acquisto supera la soglia
+				if(order.GetPrice() <= GetBestSellPrice() && GetBestSellPrice() != 0) {
+					//Prova a fare un marketOrder, se ha successo bene se no niente
+					Order result = Ask(new MarketOrderRequest(OrderKind.ASK, order.GetSize(), ""));
+
+					if(result.GetOrderID() == -1)
+					{
+						//Notifica l'utente che non è andata a buon fine :(
+						System.out.println("OrderBook.java riga:169");
+					}
+					else
+					{
+						//Notifica l'utente che è andata a buon fine :(
+						//In alternativa salva l'ordine
+						History.SaveOrder(Order.Stop(result.GetType(), result.GetSize(), result.GetPrice(), ""));
+					}
+
+					//In entrambi i casi si rimuove lo stop order
+					removeStops.add(order);
+				}
+			}
+			stopOrdersAsk.removeAll(removeStops);
+		}
+	}
 
 	public static Order Bid(LimitOrderRequest limitRequest)
 	{
@@ -116,7 +234,7 @@ public class OrderBook
 		if(limitRequest.GetType() == OrderKind.ASK)
 			throw new UnexpectedOrderException("To make a Bid you need a Bid-Request.");
 
-		int coinsToSell = 0;
+		long coinsToSell = 0;
 		synchronized (limitOrdersAsk)
 		{
 			//Trovo l'offerta di vendita migliore -> lato Ask
@@ -128,7 +246,7 @@ public class OrderBook
 			//Continua a pescare ordini finchè o finiscono o non riescono più a soddisfare l'offerta di acquisto.
 			while(order != null && (order.GetPrice() <= limitRequest.GetPrice()) && coinsToSell > 0)
 			{
-				int amountSold = order.TrySell(coinsToSell);
+				long amountSold = order.TrySell(coinsToSell);
 
 				coinsToSell -= amountSold;
 
@@ -174,7 +292,7 @@ public class OrderBook
 		if(marketRequest.GetType() == OrderKind.ASK)
 			throw new UnexpectedOrderException("To make a Bid you need a Bid-Request.");
 
-		int price = 0;
+		long price = 0;
 		synchronized (limitOrdersAsk)
 		{
 			if(limitOrdersAsk.isEmpty())
@@ -185,7 +303,7 @@ public class OrderBook
 			Order order = orders.poll();
 
 			//Teniamo traccia di quanto vogliamo vendere
-			int coinsToSell = marketRequest.GetSize();
+			long coinsToSell = marketRequest.GetSize();
 			price = order.GetPrice();
 
 			//In un certo senso sto "simulando" la viabilità del MarketOrder.
@@ -205,7 +323,7 @@ public class OrderBook
 
 			while (order != null && order.GetPrice() == price && coinsToSell > 0)
 			{
-				int amountSold = order.TrySell(coinsToSell);
+				long amountSold = order.TrySell(coinsToSell);
 
 				coinsToSell -= amountSold;
 
@@ -227,6 +345,20 @@ public class OrderBook
 		return finalOrder;
 	}
 
+	public static Order Bid(StopOrderRequest stopRequest)
+	{
+		if(stopRequest.GetType() == OrderKind.ASK)
+			throw new UnexpectedOrderException("To make a Bid you need a Bid-Request.");
+
+		synchronized (stopOrdersBid)
+		{
+			Order newOrder = Order.Stop(OrderKind.BID, stopRequest.GetSize(), stopRequest.GetPrice(), stopRequest.GetOwner());
+			stopOrdersBid.add(newOrder);
+
+			return newOrder;
+		}
+	}
+
 	public static Order Ask(LimitOrderRequest limitRequest)
 	{
 		//Se è un Buy/Bid
@@ -234,8 +366,8 @@ public class OrderBook
 			throw new UnexpectedOrderException("To make an Ask you need a Ask-Request.");
 
 
-		int coinsToSell = 0;
-		synchronized (limitOrdersAsk)
+		long coinsToSell = 0;
+		synchronized (limitOrdersBid)
 		{
 			//Trovo l'offerta di vendita migliore -> lato Ask
 			Order order = limitOrdersBid.peek();
@@ -245,8 +377,8 @@ public class OrderBook
 			//Continua a pescare ordini finchè o finiscono o non riescono più a soddisfare l'offerta di acquisto.
 			while (order != null && (order.GetPrice() >= limitRequest.GetPrice()) && coinsToSell > 0)
 			{
-				int amountSold = order.TrySell(coinsToSell);
-				int total = order.GetPrice() * amountSold;
+				long amountSold = order.TrySell(coinsToSell);
+				long total = order.GetPrice() * amountSold;
 
 				coinsToSell -= amountSold;
 
@@ -291,18 +423,18 @@ public class OrderBook
 		if(marketRequest.GetType() == OrderKind.BID)
 			throw new UnexpectedOrderException("To make an Ask you need a Ask-Request.");
 
-		int price = 0;
-		synchronized (limitOrdersAsk)
+		long price = 0;
+		synchronized (limitOrdersBid)
 		{
-			if(limitOrdersAsk.isEmpty())
-				return Order.Null(OrderKind.BID);
+			if(limitOrdersBid.isEmpty())
+				return Order.Null(OrderKind.ASK);
 
 			//Trovo l'offerta di acquisto migliore -> lato Bid
 			PriorityQueue<Order> orders = new PriorityQueue<>(limitOrdersBid);
 			Order order = orders.poll();
 
 			//Teniamo traccia di quanto vogliamo vendere
-			int coinsToSell = marketRequest.GetSize();
+			long coinsToSell = marketRequest.GetSize();
 			price = order.GetPrice();
 
 			//In un certo senso sto "simulando" la viabilità del MarketOrder.
@@ -322,7 +454,7 @@ public class OrderBook
 
 			while (order != null && order.GetPrice() == price && coinsToSell > 0)
 			{
-				int amountSold = order.TrySell(coinsToSell);
+				long amountSold = order.TrySell(coinsToSell);
 
 				coinsToSell -= amountSold;
 
@@ -342,5 +474,27 @@ public class OrderBook
 		History.SaveOrder(finalOrder);
 
 		return finalOrder;
+	}
+
+	public static Order Ask(StopOrderRequest stopRequest)
+	{
+		if(stopRequest.GetType() == OrderKind.BID)
+			throw new UnexpectedOrderException("To make an Ask you need a Ask-Request.");
+
+		synchronized (stopOrdersAsk)
+		{
+			Order newOrder = Order.Stop(OrderKind.ASK, stopRequest.GetSize(), stopRequest.GetPrice(), stopRequest.GetOwner());
+			stopOrdersAsk.add(newOrder);
+
+			return newOrder;
+		}
+	}
+
+	public static synchronized boolean TryCancel(int orderId)
+	{
+		return  limitOrdersBid.removeIf(order -> order.GetOrderID() == orderId) ||
+				limitOrdersAsk.removeIf(order -> order.GetOrderID() == orderId) ||
+				stopOrdersAsk.removeIf(order -> order.GetOrderID() == orderId)  ||
+				stopOrdersBid.removeIf(order -> order.GetOrderID() == orderId);
 	}
 }

@@ -31,6 +31,19 @@ public class ResponseInfo
         put(105, "Unknown error while trying to update credentials");
     }};
 
+    static HashMap<Integer, String> logoutResponses = new HashMap<>()
+    {{
+        put(100, "User has logged out successfully");
+        put(101, "To logout you need to login before");
+        put(102, "Inactivity time exceeded, Systems.User has been forcefully logged out");
+    }};
+
+    static HashMap<Integer, String> cancelResponses = new HashMap<>()
+    {{
+        put(100, "The order has been successfully removed");
+        put(101, "No order with the specified OrderId were found.");
+    }};
+
     public static String GetMeaning(OperationType type, int response)
     {
         switch (type)
@@ -49,6 +62,7 @@ public class ResponseInfo
             {
                 return updateCredentialsResponses.get(response);
             }
+
             /*
             case MARKET_ORDER ->
             {
@@ -61,13 +75,17 @@ public class ResponseInfo
             }
             case PRICE_HISTORY ->
             {
-            }
+            }*/
+
             case CANCEL_ORDER ->
             {
+                return cancelResponses.get(response);
             }
+
             case LOGOUT ->
             {
-            }*/
+                return logoutResponses.get(response);
+            }
         }
 
         return "non ho trovato una ceppa";

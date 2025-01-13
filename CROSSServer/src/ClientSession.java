@@ -1,5 +1,7 @@
 import Messages.Requests.*;
 import Messages.Responses.*;
+import Systems.User;
+import Systems.UsersManager;
 
 public class ClientSession
 {
@@ -60,8 +62,12 @@ public class ClientSession
 
 	public void Logout()
 	{
-		System.out.println("User "+ user.GetUsername() +" logged out.");
+		if(user == null)
+		{
+			return;
+		}
 
+		System.out.println("Systems.User "+ user.GetUsername() +" logged out.");
 		user.SetConnected(false);
 		user = null;
 	}

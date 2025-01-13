@@ -1,5 +1,6 @@
 package Exchange;
 
+import DataStructures.Tuple;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 
@@ -7,18 +8,17 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.*;
 
 public class History
 {
-	private static final ArrayList<Order> history;
+	private static final PriorityQueue<Order> history;
 	private static int nextOrderId = 0;
 
 	static
 	{
-		history = new ArrayList<>();
+		history = new PriorityQueue<>(Comparator.comparing(Order::GetDate));
 		File historyFile = new File("storicoOrdini.json");
 
 		Gson gson = new Gson();
@@ -104,54 +104,62 @@ public class History
 		}
 	}
 
-	public static synchronized ArrayList<Integer> GetOrdersRange(Month month)
+	public static synchronized Tuple<Integer> GetOrdersRange(Month month, int year)
 	{
 		int indexFrom= -1;
 		int indexTo = -1;
 
-        for (int i = 0; i < history.size(); i++)
+		PriorityQueue<Order> copy = new PriorityQueue<>(history);
+		Order order = copy.poll();
+
+		int i = 0;
+        while(order != null)
         {
-			Order order = history.get(i);
-			if(order.GetDate().getMonth() == month && indexFrom == -1)
+			if(order.GetDate().getMonth() == month && order.GetDate().getYear() == year && indexFrom == -1)
 				indexFrom = i;
 
-			if(order.GetDate().getMonth() == month && indexFrom != -1)
+			if(order.GetDate().getMonth() == month && order.GetDate().getYear() == year && indexFrom != -1)
 				indexTo = i;
+
+			i++;
+			order = copy.poll();
         }
 
-		int finalIndexFrom = indexFrom;
-		int finalIndexTo = indexTo;
-		return new ArrayList<>(){{ add(finalIndexFrom); add(finalIndexTo); }};
+		return new Tuple<Integer>(indexFrom, indexTo);
 	}
 
-	public static synchronized String GetPeriodInfo(Month month)
+	public static synchronized String GetPeriodInfo(Month month, int year)
 	{
-		int daysInMonth = month.length(false);
-
 		StringBuilder periodInfo = new StringBuilder();
-		periodInfo.append(String.format("%20s\n", month.name()));
+		periodInfo.append(String.format("%9s %20s  %27s %20s\n", "", "ASK", "|", "BID"));
+		periodInfo.append(String.format("%9s %10s %10s %10s %10s     | %10s %10s %10s %10s\n", month.name(),
+										"Open", "Close", "Min", "Max", "Open", "Close", "Min", "Max"));
+		//periodInfo.append("-------------------------------------------------------------------------------------------------------\n");
 
-		ArrayList<Integer> range = GetOrdersRange(month);
+		Tuple<Integer> range = GetOrdersRange(month, year);
 
-		if(range.getFirst().equals(range.getLast()))
+		if(range.GetFirst().equals(range.GetLast()))
 		{
 			return "NO DATA AVAILABLE";
 		}
 
 		int currentDay = -1;
-		int askOpenPrice = -1;
-		int askClosePrice = -1;
-		int bidOpenPrice = -1;
-		int bidClosePrice = -1;
+		long askOpenPrice = 0;
+		long askClosePrice = 0;
+		long bidOpenPrice = 0;
+		long bidClosePrice = 0;
 
-		int askMinPrice = Integer.MAX_VALUE;
-		int askMaxPrice = -1;
-		int bidMinPrice = Integer.MAX_VALUE;
-		int bidMaxPrice = -1;
+		long askMinPrice = Integer.MAX_VALUE;
+		long askMaxPrice = -1;
+		long bidMinPrice = Integer.MAX_VALUE;
+		long bidMaxPrice = -1;
 
-		for (int i = range.getFirst(); i <= range.getLast(); i++)
+		Object[] orders = history.toArray();
+		int j = 0;
+		for (int i = range.GetFirst(); i <= range.GetLast(); i++)
 		{
-			Order order = history.get(i);
+			j++;
+			Order order = (Order)orders[i];
 			if(currentDay == -1)
 			{
 				currentDay = order.GetDate().getDayOfMonth();
@@ -161,7 +169,7 @@ public class History
 			{
 				bidClosePrice = order.GetPrice();
 
-				if(bidOpenPrice == -1) bidOpenPrice = order.GetPrice();
+				if(bidOpenPrice == 0) bidOpenPrice = order.GetPrice();
 
 				if(bidMinPrice > order.GetPrice()) bidMinPrice = order.GetPrice();
 				if(bidMaxPrice < order.GetPrice()) bidMaxPrice = order.GetPrice();
@@ -169,7 +177,7 @@ public class History
 			else
 			{
 				askClosePrice = order.GetPrice();
-				if(askOpenPrice == -1) askOpenPrice = order.GetPrice();
+				if(askOpenPrice == 0) askOpenPrice = order.GetPrice();
 
 				if(askMinPrice > order.GetPrice()) askMinPrice = order.GetPrice();
 				if(askMaxPrice < order.GetPrice()) askMaxPrice = order.GetPrice();
@@ -177,24 +185,33 @@ public class History
 
 			if(order.GetDate().getDayOfMonth() != currentDay)
 			{
-				periodInfo.append(String.format("%2d => %2d %2d %2d %2d -- %2d %2d %2d %2d\n", currentDay,
+				//Mi assicuro che non escano valori assurdi (tipo -1) nel caso non ci siano stati ordini ask o bid per quel giorno.
+				if(askMinPrice == Integer.MAX_VALUE) { askMinPrice = 0; }
+				askMaxPrice = Math.max(0, askMaxPrice);
+
+				if(bidMinPrice == Integer.MAX_VALUE) { bidMinPrice = 0; }
+				bidMaxPrice = Math.max(0, bidMaxPrice);
+
+				//Stampo le info
+				periodInfo.append(String.format("%9d => %10d %10d %10d %10d  | %10d %10d %10d %10d\n", currentDay,
 												askOpenPrice, askClosePrice, askMinPrice, askMaxPrice,
 												bidOpenPrice, bidClosePrice, bidMinPrice, bidMaxPrice));
 
+				//Reset per il giorno successivo
 				currentDay = -1;
-				askOpenPrice = -1;
-				askClosePrice = -1;
-				bidOpenPrice = -1;
-				bidClosePrice = -1;
+				askOpenPrice = 0;
+				askClosePrice = 0;
+				bidOpenPrice = 0;
 
-				askMinPrice = -1;
-				askMaxPrice = Integer.MAX_VALUE;
-				bidMinPrice = -1;
-				bidMaxPrice = Integer.MAX_VALUE;
+				askMinPrice = Integer.MAX_VALUE;
+				askMaxPrice = -1;
+				bidMinPrice = Integer.MAX_VALUE;
+				bidMaxPrice = -1;
 
 			}
 		}
 
+		periodInfo.append("Records amount: ").append(j).append("\n");
 
 		return periodInfo.toString();
 	}
