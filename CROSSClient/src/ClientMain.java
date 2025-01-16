@@ -5,6 +5,7 @@ import Systems.User;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Scanner;
@@ -15,6 +16,9 @@ public class ClientMain
 {
 	static Socket cmd_socket;
 	static HashMap<String, CrossCommand> commands;
+
+	//Every order done in this client session
+	static ArrayList<Integer> savedOrders;
 
 	static
 	{
@@ -31,19 +35,23 @@ public class ClientMain
 		commands.put("logout", new LogoutCommand());
 		commands.put("exit", new ExitCommand());
 		commands.put("help", new HelpCommand(commands));
+
+		savedOrders = new ArrayList<>();
 	}
 
 	public static void main(String[] args)
 	{
 		System.out.println("Ciao sono il client ヾ(≧▽≦*)o");
 		System.out.println("Provo a connettermi (⊙_⊙)？");
+
 		do
 		{
-			try {
+			try
+			{
 				cmd_socket = new Socket(GlobalConfigs.SERVER_IP, GlobalConfigs.CMD_PORT);
-			} catch (IOException e) {
-				continue;
 			}
+			catch (IOException e) { continue; }
+
 			break;
 		}while(true);
 
@@ -54,6 +62,9 @@ public class ClientMain
 		ResponseListener listener = new ResponseListener(cmdConnection);
 		listener.start();
 
+		NotificationListener notificationListener = new NotificationListener(cmdConnection);
+		notificationListener.start();
+
 		Scanner scanner = new Scanner(System.in);
 
 		System.out.println("Mi sono connesso ( •̀ .̫ •́ )✧)");
@@ -61,6 +72,9 @@ public class ClientMain
 		while(!cmdConnection.IsClosed())
 		{
 			String input = scanner.nextLine();
+
+			//La chiamata a scanner.NextLine è bloccante, è quindi possibile che nel mentre qualcuno abbia prova a chiudere la connesione.
+			if(cmdConnection.IsClosed()) { break; }
 
 			//Un comando avrà il seguente formato -> command arg1 arg2 ...
 			String[] tokens = input.split(" ");
@@ -75,19 +89,36 @@ public class ClientMain
 			String[] cmdArgs = Arrays.copyOfRange(tokens, 1, tokens.length);
 
 			try { cmd.Execute(cmdConnection, cmdArgs); }
-			catch (IOException e){ break; }
+			catch (IOException e){
+				System.out.println("[WARNING] Server is no longer reachable. Closing...");
+				break;
+			}
 			catch (TimeoutException _){ continue; }
 		}
 
-		//Close connection
-        try
-        {
-			cmdConnection.Close();
-			System.out.println("Systems.Connection closed.");
-        } catch (IOException e)
-        {
-            throw new RuntimeException("Something went wrong while closing connection: "+ e);
-        }
+		//Join dei thread aperti
+		try
+		{
+			listener.join();
+			System.out.println("ResponseListener-Thread has been closed.");
+			notificationListener.interrupt();
+			notificationListener.join();
+			System.out.println("NotificationListener-Thread has been closed.");
 
+		}
+		catch (InterruptedException e) { throw new RuntimeException(e); }
+
+		//Close connection
+        cmdConnection.TryClose();
+	}
+
+	public synchronized static void SaveOrder(int orderId)
+	{
+		savedOrders.add(orderId);
+	}
+
+	public synchronized static boolean HasOrder(int orderId)
+	{
+		return savedOrders.contains(orderId);
 	}
 }

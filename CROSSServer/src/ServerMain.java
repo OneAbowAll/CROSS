@@ -1,5 +1,9 @@
+import Messages.Responses.HistoryResponse;
 import Systems.GlobalConfigs;
-import Systems.UsersManager;
+import Systems.Notify;
+import Systems.Users;
+
+import Exchange.History;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -14,6 +18,8 @@ public class ServerMain
 
 	public static void main(String[] args)
 	{
+		Notify.Startup();
+
 		//Apri connessione al mondo
 		System.out.println("Ciao sono il server ヾ(•ω•`)o");
 		System.out.println("Ora mi metto ad ascoltare... ᕦ(ò_óˇ)ᕤ");
@@ -27,8 +33,8 @@ public class ServerMain
 
 		//Clients Thread pool
 		ExecutorService clientPool = Executors.newCachedThreadPool();
-		ExchangeHandler exchangeHandler = new ExchangeHandler();
-		exchangeHandler.start();
+		ServerManager serverManager = new ServerManager();
+		serverManager.start();
 
 		while(!acceptSocket.isClosed())
 		{
@@ -39,15 +45,37 @@ public class ServerMain
 				clientPool.submit(new ClientHandler(clientSocket));
 
 			}
-			catch (IOException e) {
+			catch (IOException e) //Scattato il timeout
+			{
+				//Se c'è ancora qualche utente loggato continua a girare
+				if(ServerManager.openConnectionsAmount.get() > 0) continue;
+
+				//In alternativa esci
+				System.out.println("No activity detected. Initializing automatic server shutdown...");
 				break;
 			}
 		}
 
+		try {
+			acceptSocket.close();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+		System.out.println("Closing clients thread-pool...");
 		clientPool.shutdown();
 		try { clientPool.awaitTermination(1, TimeUnit.MINUTES);}
 		catch (InterruptedException e) { throw new RuntimeException(e);	}
 
-		UsersManager.Save();
+		System.out.println("Closing ServerManager-Thread...");
+		serverManager.Stop();
+		try { serverManager.join();	}
+		catch (InterruptedException e) { System.out.println("Error while trying to close ServerManager-Thread.");	}
+
+		System.out.println("Saving system's data...");
+		Users.Save();
+		History.Save();
+
+		System.out.println("Server closed.");
 	}
 }

@@ -4,6 +4,7 @@ import Exceptions.UnexpectedOrderException;
 import Messages.Requests.LimitOrderRequest;
 import Messages.Requests.MarketOrderRequest;
 import Messages.Requests.StopOrderRequest;
+import Systems.Notify;
 
 import java.util.ArrayList;
 import java.util.PriorityQueue;
@@ -47,7 +48,7 @@ public class OrderBook
 		stopOrdersAsk = new ArrayList<>();
 	}
 
-	public static synchronized String Info(PriorityQueue<Order> orderQueue)
+	public static String Info(PriorityQueue<Order> orderQueue)
 	{
 		StringBuilder info = new StringBuilder();
 		info.append(String.format("%10s%10s%10s\n", "Price", "Size", "Total"));
@@ -55,15 +56,14 @@ public class OrderBook
 		if(orderQueue.isEmpty())
 			return info.toString();
 
-		PriorityQueue<Order> orders = new PriorityQueue<>(orderQueue);
-		Order order = orders.poll();
+		Order order = orderQueue.poll();
 
 		long price = order.GetPrice();
 		long size = order.GetSize();
 
-		while(!orders.isEmpty())
+		while(!orderQueue.isEmpty())
 		{
-			order = orders.poll();
+			order = orderQueue.poll();
 			if(order.GetPrice() == price)
 			{
 				size += order.GetSize();
@@ -101,14 +101,23 @@ public class OrderBook
 		status += String.format("%24s\n", "Limit Orders");
 		status += String.format("%22s\n", "Ask Side");
 
-		status += Info(limitOrdersAsk);
+		PriorityQueue<Order> orders;
+		synchronized (limitOrdersAsk)
+		{
+			orders = new PriorityQueue<>(limitOrdersAsk);
+		}
+		status += Info(orders);
 
 		status += "-------------------------------------\n";
 		status += String.format("Bid/Ask Spread: %5d\n", GetBestBuyPrice() - GetBestSellPrice());
 		status += "-------------------------------------\n";
 
 		status += String.format("%22s\n", "Bid Side");
-		status += Info(limitOrdersBid);
+		synchronized (limitOrdersBid)
+		{
+			orders = new PriorityQueue<>(limitOrdersBid);
+		}
+		status += Info(orders);
 
 		status += "\n\n";
 		status += String.format("%24s\n", "Stop Orders");
@@ -162,69 +171,69 @@ public class OrderBook
 
 	public static void TryCompleteStops()
 	{
+		ArrayList<Order> removedStops = new ArrayList<>();
+		ArrayList<Boolean> stopsOutcome = new ArrayList<>();
+
 		//Try complete the bidOrders
 		synchronized (stopOrdersBid)
 		{
-			ArrayList<Order> removeStops = new ArrayList<>();
-
 			for (Order order : stopOrdersBid)
 			{
 				//Se il prezzo di vendita supera la soglia
 				if(order.GetPrice() >= GetBestBuyPrice() && GetBestBuyPrice() != 0) {
 					//Prova a fare un marketOrder, se ha successo bene se no niente
-					Order result = Bid(new MarketOrderRequest(OrderKind.BID, order.GetSize(), ""));
+					Order result = Bid(new MarketOrderRequest(OrderKind.BID, order.GetSize(), order.GetOwner()));
 
 					if(result.GetOrderID() == -1)
 					{
 						//Notifica l'utente che non è andata a buon fine :(
-						System.out.println("OrderBook.java riga:145");
-						System.out.println("Rimosso, fallito market order \n "+ order.toString());
+						Notify.Send(order, false);
 					}
 					else
 					{
-						//Notifica l'utente che è andata a buon fine :(
-						//In alternativa salva l'ordine
-						System.out.println("Rimosso, tutto ok \n "+ order.toString());
+						//Notifica l'utente che è andata a buon fine
+						Notify.Send(order, true);
 						History.SaveOrder(order);
 					}
 
 					//In entrambi i casi si rimuove lo stop order
-					removeStops.add(order);
+					removedStops.add(order);
 				}
 			}
 
-			stopOrdersBid.removeAll(removeStops);
+			stopOrdersBid.removeAll(removedStops);
 		}
 
 		//Try complete the askOrders
 		synchronized (stopOrdersAsk)
 		{
-			ArrayList<Order> removeStops = new ArrayList<>();
-
+			removedStops = new ArrayList<>();
 			for (Order order : stopOrdersAsk)
 			{
 				//Se il prezzo di acquisto supera la soglia
 				if(order.GetPrice() <= GetBestSellPrice() && GetBestSellPrice() != 0) {
 					//Prova a fare un marketOrder, se ha successo bene se no niente
-					Order result = Ask(new MarketOrderRequest(OrderKind.ASK, order.GetSize(), ""));
+					Order result = Ask(new MarketOrderRequest(OrderKind.ASK, order.GetSize(), order.GetOwner()));
 
 					if(result.GetOrderID() == -1)
 					{
 						//Notifica l'utente che non è andata a buon fine :(
-						System.out.println("OrderBook.java riga:169");
+						Notify.Send(order, false);
 					}
 					else
 					{
 						//Notifica l'utente che è andata a buon fine :(
-						//In alternativa salva l'ordine
-						History.SaveOrder(Order.Stop(result.GetType(), result.GetSize(), result.GetPrice(), ""));
+						order.SetPrice(result.GetPrice());
+						Notify.Send(order, true);
+						History.SaveOrder(order);
 					}
 
 					//In entrambi i casi si rimuove lo stop order
-					removeStops.add(order);
+					removedStops.add(order);
 				}
 			}
-			stopOrdersAsk.removeAll(removeStops);
+
+			stopOrdersAsk.removeAll(removedStops);
 		}
 	}
 
@@ -247,11 +256,12 @@ public class OrderBook
 			while(order != null && (order.GetPrice() <= limitRequest.GetPrice()) && coinsToSell > 0)
 			{
 				long amountSold = order.TrySell(coinsToSell);
-
 				coinsToSell -= amountSold;
 
 				//Se soddisfatto salva l'ordine
 				if (order.GetSize() == 0) {
+					order.SetSize(amountSold);
+					Notify.Send(order);
 					History.SaveOrder(order);
 					limitOrdersAsk.poll(); //Rimuovi se l'ordine è soddisfatto.
 				}
@@ -276,7 +286,7 @@ public class OrderBook
 		//Se l'ordine è stato completamente evaso aggiungilo alla History e restituiscilo.
 		if(coinsToSell == 0)
 		{
-			Order finalOrder = Order.Limit(OrderKind.BID, limitRequest.GetSize(), limitRequest.GetPrice(), limitRequest.GetOwner());
+			Order finalOrder = Order.Limit(OrderKind.BID, limitRequest.GetSize(), limitRequest.GetPrice(), "");
 			History.SaveOrder(finalOrder);
 
 			return finalOrder;
@@ -330,6 +340,8 @@ public class OrderBook
 				//Se soddisfatto salva l'ordine
 				if (order.GetSize() == 0)
 				{
+					order.SetSize(amountSold);
+					Notify.Send(order);
 					History.SaveOrder(order);
 					limitOrdersAsk.poll(); //Rimuovi se l'ordine è soddisfatto.
 				}
@@ -339,7 +351,7 @@ public class OrderBook
 		}
 
 		//A questo punto so che il marketOrder è fattibile, quindi lo creo, lo salvo e lo resitutisco.
-		Order finalOrder = Order.Market(OrderKind.BID, marketRequest.GetSize(), price, marketRequest.GetOwner());
+		Order finalOrder = Order.Market(OrderKind.BID, marketRequest.GetSize(), price, "");
 		History.SaveOrder(finalOrder);
 
 		return finalOrder;
@@ -365,7 +377,6 @@ public class OrderBook
 		if(limitRequest.GetType() == OrderKind.BID)
 			throw new UnexpectedOrderException("To make an Ask you need a Ask-Request.");
 
-
 		long coinsToSell = 0;
 		synchronized (limitOrdersBid)
 		{
@@ -378,13 +389,14 @@ public class OrderBook
 			while (order != null && (order.GetPrice() >= limitRequest.GetPrice()) && coinsToSell > 0)
 			{
 				long amountSold = order.TrySell(coinsToSell);
-				long total = order.GetPrice() * amountSold;
 
 				coinsToSell -= amountSold;
 
 				//Se soddisfatto salva l'ordine
 				if (order.GetSize() == 0)
 				{
+					order.SetSize(amountSold);
+					Notify.Send(order);
 					History.SaveOrder(order);
 					limitOrdersBid.poll(); //Rimuovi se l'ordine è soddisfatto.
 				}
@@ -408,7 +420,7 @@ public class OrderBook
 		//Se l'ordine è stato completamente evaso aggiungilo alla History e restituiscilo.
 		if(coinsToSell == 0)
 		{
-			Order finalOrder = Order.Limit(OrderKind.ASK, limitRequest.GetSize(), limitRequest.GetPrice(), limitRequest.GetOwner());
+			Order finalOrder = Order.Limit(OrderKind.ASK, limitRequest.GetSize(), limitRequest.GetPrice(), "");
 			History.SaveOrder(finalOrder);
 			return finalOrder;
 		}
@@ -461,6 +473,8 @@ public class OrderBook
 				//Se soddisfatto salva l'ordine
 				if (order.GetSize() == 0)
 				{
+					order.SetSize(amountSold);
+					Notify.Send(order);
 					History.SaveOrder(order);
 					limitOrdersBid.poll(); //Rimuovi se l'ordine è soddisfatto.
 				}
@@ -470,7 +484,7 @@ public class OrderBook
 		}
 
 		//A questo punto so che il marketOrder è fattibile, quindi lo creo, lo salvo e lo resitutisco.
-		Order finalOrder = Order.Market(OrderKind.ASK, marketRequest.GetSize(), price, marketRequest.GetOwner());
+		Order finalOrder = Order.Market(OrderKind.ASK, marketRequest.GetSize(), price, "");
 		History.SaveOrder(finalOrder);
 
 		return finalOrder;

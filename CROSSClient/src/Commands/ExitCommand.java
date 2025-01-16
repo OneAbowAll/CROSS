@@ -19,8 +19,7 @@ public class ExitCommand extends CrossCommand
 		System.out.println("Disconnecting from server...");
 		connection.SendMessage(new ExitRequest().ToMessage());
 
-		try { connection.Close(); }
-		catch (IOException e) { throw new RuntimeException(e); }
+		connection.TryClose();
 	}
 
 	@Override

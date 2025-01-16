@@ -12,7 +12,7 @@ import java.util.concurrent.TimeoutException;
 
 public class Connection
 {
-    private final Socket socket;
+    private Socket socket;
 
     private final DataInputStream input;
     private final DataOutputStream output;
@@ -37,6 +37,11 @@ public class Connection
         close = false;
         maxTimeout = 0;
         RefreshTimeout();
+    }
+
+    synchronized void RefreshTimeout()
+    {
+        lastActionTime = System.currentTimeMillis();
     }
 
     public void SendMessage(CrossMessage request) throws IOException
@@ -79,13 +84,20 @@ public class Connection
         return close || socket.isOutputShutdown() || socket.isInputShutdown();
     }
 
-    public synchronized void Close() throws IOException
+    public synchronized boolean TryClose()
     {
-        if(close) { return; }
+        if(close) { return false; }
 
         close = true;
-        socket.close();
-    }
+
+		try {
+			socket.close();
+            return true;
+		}
+        catch (IOException e) {
+            return false;
+		}
+	}
 
     /**
      * @param maxInactivityTime If provided value>0 a call to WaitMessage(...) will block for only the specified amount of time(in milliseconds).
@@ -96,8 +108,6 @@ public class Connection
         maxTimeout = Math.max(maxInactivityTime, 0);
     }
 
-    synchronized void RefreshTimeout()
-    {
-        lastActionTime = System.currentTimeMillis();
-    }
+    public Socket GetSocket(){ return socket; }
+
 }

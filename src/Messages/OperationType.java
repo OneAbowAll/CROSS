@@ -13,6 +13,7 @@ public enum OperationType
     CANCEL_ORDER(312),
     GET_STATUS(313),
 
+    INFO(399),
     LOGOUT(400),
     EXIT(555);
 

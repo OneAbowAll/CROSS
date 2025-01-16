@@ -1,7 +1,7 @@
 import Messages.Requests.*;
 import Messages.Responses.*;
 import Systems.User;
-import Systems.UsersManager;
+import Systems.Users;
 
 public class ClientSession
 {
@@ -21,7 +21,7 @@ public class ClientSession
 		//Se per questa sessione è già stato fatto un login resitutisci un error-103
 		if(user != null) { return new LoginResponse(103); }
 
-		User foundUser = UsersManager.Find(logReq.GetUsername());
+		User foundUser = Users.Find(logReq.GetUsername());
 		if(foundUser == null) { return new LoginResponse(101); }
 
 		//Se è stato trovato un utente e la password combacia conferma il login per la sessione
@@ -44,17 +44,17 @@ public class ClientSession
 		//Se per questa sessione è già stato fatto un login resitutisci un error-102
 		if(user != null) { return new RegisterResponse(102); }
 
-		boolean success = UsersManager.TryRegisterUser(regReq.GetUsername(), regReq.GetPassword());
+		boolean success = Users.TryRegisterUser(regReq.GetUsername(), regReq.GetPassword());
 		if(!success) { return new RegisterResponse(101); }
 
-		user = UsersManager.Find(regReq.GetUsername());
+		user = Users.Find(regReq.GetUsername());
 		user.SetConnected(true);
 		return new RegisterResponse(100);
 	}
 
 	public UpdateCredentialsResponse TryUpdateCredentials(UpdateCredentialsRequest request)
 	{
-		User foundUser = UsersManager.Find(request.GetUsername());
+		User foundUser = Users.Find(request.GetUsername());
 		if(foundUser == null) { return new UpdateCredentialsResponse(102); }
 
 		return new UpdateCredentialsResponse(foundUser.TryChangePassword(request.GetOldPassword(), request.GetNewPassword()));
@@ -67,7 +67,7 @@ public class ClientSession
 			return;
 		}
 
-		System.out.println("Systems.User "+ user.GetUsername() +" logged out.");
+		System.out.println("User "+ user.GetUsername() +" logged out.");
 		user.SetConnected(false);
 		user = null;
 	}

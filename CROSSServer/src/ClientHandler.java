@@ -7,6 +7,7 @@ import Messages.Requests.*;
 import Messages.Responses.*;
 import Exchange.History;
 import Systems.Connection;
+import Systems.Notify;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -25,10 +26,10 @@ public class ClientHandler implements Runnable
     @Override
     public void run()
     {
+		ServerManager.openConnectionsAmount.addAndGet(1);
 		connection.SetTimeout(ServerConfigs.CLIENT_MAX_TIMEOUT);
 
 		ClientSession session = new ClientSession();
-
         //Client CmdLoop
 		while(!connection.IsClosed())
 		{
@@ -40,12 +41,22 @@ public class ClientHandler implements Runnable
 				{
 					case LOGIN -> {
 						LoginRequest logReq = Deserializer.ToLoginRequest(msg);
-						connection.SendMessage(session.TryLogin(logReq));
+
+						LoginResponse logResp = session.TryLogin(logReq);
+						connection.SendMessage(logResp);
+
+						if(logResp.GetResponseCode() == 100)
+							Notify.Register(session.GetUser(), connection);
 					}
 
 					case REGISTER -> {
 						RegisterRequest regReq = Deserializer.ToRegisterRequest(msg);
-						connection.SendMessage(session.TryRegister(regReq));
+
+						RegisterResponse regResp = session.TryRegister(regReq);
+						connection.SendMessage(regResp);
+
+						if(regResp.GetResponseCode() == 100)
+							Notify.Register(session.GetUser(), connection);
 					}
 
 					case UPDATE_CREDENTIALS -> {
@@ -55,6 +66,13 @@ public class ClientHandler implements Runnable
 
 					case MARKET_ORDER ->
 					{
+						if(session.GetUser() == null)
+						{
+							InfoResponse infoResp = new InfoResponse(101);
+							connection.SendMessage(infoResp);
+							continue;
+						}
+
 						MarketOrderRequest mrkRequest = Deserializer.ToMarketOrderRequest(msg);
 						mrkRequest.SetOwner(session.GetUser().GetUsername());
 
@@ -70,6 +88,13 @@ public class ClientHandler implements Runnable
 
 					case LIMIT_ORDER ->
 					{
+						if(session.GetUser() == null)
+						{
+							InfoResponse infoResp = new InfoResponse(101);
+							connection.SendMessage(infoResp);
+							continue;
+						}
+
 						LimitOrderRequest lmtRequest = Deserializer.ToLimitOrderRequest(msg);
 						lmtRequest.SetOwner(session.GetUser().GetUsername());
 
@@ -79,12 +104,19 @@ public class ClientHandler implements Runnable
 						else
 							result = OrderBook.Ask(lmtRequest);
 
-						LimitOrderResponse lmtResponse = new LimitOrderResponse(result, (lmtRequest.GetSize() == result.GetSize()));
+						LimitOrderResponse lmtResponse = new LimitOrderResponse(result, (lmtRequest.GetType() != result.GetType()));
 						connection.SendMessage(lmtResponse);
 					}
 
 					case STOP_ORDER ->
 					{
+						if(session.GetUser() == null)
+						{
+							InfoResponse infoResp = new InfoResponse(101);
+							connection.SendMessage(infoResp);
+							continue;
+						}
+
 						StopOrderRequest stopRequest = Deserializer.ToStopOrderRequest(msg);
 						stopRequest.SetOwner(session.GetUser().GetUsername());
 
@@ -138,7 +170,7 @@ public class ClientHandler implements Runnable
 
 					case EXIT -> {
 						session.Logout();
-						connection.Close();
+						connection.TryClose();
 					}
 
 					case null, default -> {
@@ -154,23 +186,25 @@ public class ClientHandler implements Runnable
 			}
 			catch (TimeoutException e) {
 				try {
-					//Se l'utente non è loggato si ignora il timeout, ovvero che solo in questo caso,
-					//dopo l'eccezione la chiamata al WaitMessage diventa bloccante a tempo indeterminato finchè non viene fatto un login.
-					//In parole povere se un utente non fa il login/registrazione, può rimanere connesso per sempre.
-					if(session.GetUser() == null) { continue; }
+					//Se l'utente non è loggato si chiude direttamente il tutto, poichè è possible che abbia chiuso
+					// direttamente l'applicazione.
+					if(session.GetUser() == null)
+					{
+						connection.SendMessage(new ExitResponse(101));
+						break;
+					}
 
 					session.Logout();
 					connection.SendMessage(new LogoutResponse(102));
+					break;
 				}
 				catch (IOException ex) {
 					throw new RuntimeException(ex);
 				}
 			}
-
-			System.out.println(session.toString());
 		}
 
-		try { connection.Close(); }
-		catch (IOException ex) { throw new RuntimeException(ex); }
+		ServerManager.openConnectionsAmount.addAndGet(-1);
+		connection.TryClose();
     }
 }

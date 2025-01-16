@@ -1,5 +1,6 @@
 import Messages.Deserializer;
 import Messages.Message;
+import Messages.Requests.ExitRequest;
 import Messages.Responses.*;
 import Systems.Connection;
 
@@ -56,8 +57,8 @@ public class ResponseListener extends Thread
 							System.out.println("The LimitOrder has been successfully completed. Your OrderId is => "+ response.GetOrderID());
 						else
 							System.out.println("Your LimitOrder couldn't be completed.\n" +
-												"Your order has been added to the OrderBook with the following OrderId => "
-												+ response.GetOrderID());
+									"Your order has been added to the OrderBook with the following OrderId => "
+									+ response.GetOrderID());
 					}
 
 					case STOP_ORDER -> {
@@ -66,8 +67,8 @@ public class ResponseListener extends Thread
 						if(response.GetOrderID() == -1)
 							System.out.println("The StopOrder could not be completed.");
 						else
-							System.out.println("The StopOrder has been created. Your OrderId is => "+ response.GetOrderID()+
-												"\n You can cancel your StopOrder any time by using the cancel-command.");
+							System.out.println("The StopOrder has been created. Your OrderId is => " + response.GetOrderID() +
+									"\n You can cancel your StopOrder any time by using the cancel-command.");
 
 					}
 
@@ -92,20 +93,31 @@ public class ResponseListener extends Thread
 					}
 
 					case EXIT -> {
-						continue;
+						ExitResponse response = Deserializer.ToExitResponse(msg);
+						System.out.println(response.GetErrorMessage());
+						System.out.println("Disconnected from server. Close application by pressing any key.");
+
+						_listenConnection.TryClose();
+					}
+
+					case INFO ->
+					{
+						InfoResponse response = Deserializer.ToInfoResponse(msg);
+						System.out.println(response.GetErrorMessage());
 					}
 				}
 
 			}
 			catch (IOException e)
 			{
-				throw new RuntimeException(e);
+				System.out.println("[WARNING] Server is no longer reachable. Close application by pressing any key.");
+				_listenConnection.TryClose();
+				return;
 			}
 			catch (TimeoutException _)
 			{
 				continue;
 			}
-
 		}
 	}
 }

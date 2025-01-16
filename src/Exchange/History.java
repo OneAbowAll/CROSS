@@ -1,27 +1,34 @@
 package Exchange;
 
 import DataStructures.Tuple;
+import com.google.gson.FormattingStyle;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.time.Month;
+import java.time.ZoneOffset;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class History
 {
 	private static final PriorityQueue<Order> history;
-	private static int nextOrderId = 0;
+	private static Long nextOrderId = 0L;
 
 	static
 	{
 		history = new PriorityQueue<>(Comparator.comparing(Order::GetDate));
+		Load();
+	}
+
+	public static void Load()
+	{
 		File historyFile = new File("storicoOrdini.json");
 
-		Gson gson = new Gson();
 		try(FileReader fr = new FileReader(historyFile);
 			BufferedReader br = new BufferedReader(fr);
 			JsonReader reader = new JsonReader(br);)
@@ -31,7 +38,6 @@ public class History
 			reader.nextName();
 			reader.beginArray();
 
-			int longestTs = -1;
 			while(reader.hasNext())
 			{
 				reader.beginObject();
@@ -39,12 +45,12 @@ public class History
 				//OrderID
 				String name = reader.nextName();
 				assert(name.equals("orderId"));
-				int id = reader.nextInt();
+				long id = reader.nextLong();
 
 				//Type
 				name = reader.nextName();
 				assert(name.equals("type"));
-				OrderKind kind = (reader.nextString().equals("bid"))? OrderKind.BID:OrderKind.ASK;
+				OrderKind kind = (reader.nextString().equals("bid"))? OrderKind.BID: OrderKind.ASK;
 
 				//Exchange.OrderType
 				name = reader.nextName();
@@ -62,23 +68,29 @@ public class History
 				//Size
 				name = reader.nextName();
 				assert(name.equals("size"));
-				int size = reader.nextInt();
+				long size = reader.nextLong();
 
 				//Price
 				name = reader.nextName();
 				assert(name.equals("price"));
-				int price = reader.nextInt();
+				long price = reader.nextLong();
 
 				//Timestamp
 				name = reader.nextName();
 				assert(name.equals("timestamp"));
-				int timestamp = reader.nextInt();
+				long timestamp = reader.nextLong();
 
 				//Degli ordini completati non mi interessa sapere da chi è stato creato.
 				Order order = new Order(id, kind, type, size, price, timestamp, "");
 				history.add(order);
 
 				reader.endObject();
+
+				synchronized (nextOrderId)
+				{
+					if(nextOrderId < id)
+						nextOrderId = id;
+				}
 			}
 
 			reader.endArray();
@@ -88,10 +100,49 @@ public class History
 		{
 			throw new RuntimeException(e);
 		}
-
 	}
 
-	public static synchronized int GetNextId()
+	public static void Save()
+	{
+		File historyFile = new File("storicoOrdini.json");
+
+		try(FileWriter fw = new FileWriter(historyFile);
+		   	BufferedWriter bw = new BufferedWriter(fw);
+			JsonWriter js = new JsonWriter(bw))
+		{
+
+			js.setFormattingStyle(FormattingStyle.PRETTY);
+
+			js.beginObject();
+			js.name("trades").beginArray();
+
+			synchronized (history)
+			{
+				for(Order order : history)
+				{
+					js.jsonValue(order.ToJson().toString());
+					/*
+					js.beginObject();
+					js.name("orderId").value(order.GetOrderID());
+					js.name("type").value(order.GetType().GetName());
+					js.name("orderType").value(order.GetOrderType().name().toLowerCase(Locale.ROOT));
+					js.name("size").value(order.GetSize());
+					js.name("price").value(order.GetPrice());
+					js.name("timestamp").value(order.GetDate().toEpochSecond(ZoneOffset.of("+0")));
+					js.endObject();
+					*/
+				}
+			}
+
+			js.endArray();
+			js.endObject();
+		}
+		catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static synchronized long GetNextId()
 	{
 		return nextOrderId++;
 	}

@@ -1,5 +1,7 @@
 package Exchange;
 
+import com.google.gson.JsonObject;
+
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -9,19 +11,19 @@ import java.util.Locale;
 
 public class Order implements Comparable<Order>
 {
-	private final int orderID;
+	private final long orderID;
 
 	private final OrderKind type;
 	private final OrderType orderType;
 
 	private long size;
-	private final long price;
+	private long price;
 
 	private final LocalDateTime date;
 
 	private String owner;
 
-	public Order(int orderID, OrderKind kind, OrderType type, long size, long price, int timeStamp, String owner)
+	public Order(long orderID, OrderKind kind, OrderType type, long size, long price, long timeStamp, String owner)
 	{
 		this.orderID = orderID;
 		this.type = kind;
@@ -70,14 +72,52 @@ public class Order implements Comparable<Order>
 		return type;
 	}
 
-	public int GetOrderID()
+	public long GetOrderID()
 	{
 		return orderID;
 	}
 
-	public String GetOwner()
+	public void SetSize(long amount)
 	{
-		return owner;
+		size = amount;
+	}
+
+	public void SetPrice(long amount)
+	{
+		price = amount;
+	}
+
+	public String GetOwner() { return owner; }
+
+	public void SetOwner(String owner)
+	{
+		this.owner = owner;
+	}
+
+	public static Order FromJson(JsonObject input)
+	{
+		long orderId = input.get("orderId").getAsLong();
+		String type = input.get("type").getAsString();
+		String orderType = input.get("orderType").getAsString();
+		long size = input.get("size").getAsLong();
+		long price = input.get("price").getAsLong();
+		long timestamp = input.get("timestamp").getAsLong();
+
+
+		return new Order(orderId, OrderKind.Get(type), OrderType.Get(orderType), size, price, timestamp, "");
+	}
+
+	public JsonObject ToJson()
+	{
+		JsonObject output = new JsonObject();
+		output.addProperty("orderId", GetOrderID());
+		output.addProperty("type", GetType().GetName());
+		output.addProperty("orderType", GetOrderType().name().toLowerCase(Locale.ROOT));
+		output.addProperty("size", GetSize());
+		output.addProperty("price", GetPrice());
+		output.addProperty("timestamp", GetDate().toEpochSecond(ZoneOffset.of("+0")));
+
+		return output;
 	}
 
 	@Override

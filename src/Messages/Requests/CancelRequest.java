@@ -1,6 +1,5 @@
 package Messages.Requests;
 
-import Exchange.OrderKind;
 import Messages.OperationType;
 
 public class CancelRequest extends Request

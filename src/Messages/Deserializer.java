@@ -159,4 +159,20 @@ public class Deserializer
 
 		return gson.fromJson(message.GetData(), LogoutResponse.class);
 	}
+
+	public static ExitResponse ToExitResponse(Message message)
+	{
+		if(message.GetType() != OperationType.EXIT)
+			throw new UnexpectedRequestException("The message is not a Exit response");
+
+		return gson.fromJson(message.GetData(), ExitResponse.class);
+	}
+
+	public static InfoResponse ToInfoResponse(Message message)
+	{
+		if(message.GetType() != OperationType.INFO)
+			throw new UnexpectedRequestException("The message is not a Info response");
+
+		return gson.fromJson(message.GetData(), InfoResponse.class);
+	}
 }

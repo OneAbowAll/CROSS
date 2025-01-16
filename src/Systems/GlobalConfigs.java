@@ -8,7 +8,9 @@ import java.util.Properties;
 public class GlobalConfigs
 {
 	public static final String SERVER_IP = Get("server_ip");
+	public static final String NOTIF_IP = Get("notification_ip");
 	public static final int CMD_PORT = GetInt("cmd_port");
+	public static final int NOTIF_PORT = GetInt("notification_port");
 
 	static Properties crossConfig;
 

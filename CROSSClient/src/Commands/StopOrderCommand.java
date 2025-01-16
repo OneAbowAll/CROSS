@@ -1,8 +1,6 @@
 package Commands;
 
 import Exchange.OrderKind;
-import Messages.Requests.LimitOrderRequest;
-import Messages.Requests.MarketOrderRequest;
 import Messages.Requests.StopOrderRequest;
 import Systems.Connection;
 

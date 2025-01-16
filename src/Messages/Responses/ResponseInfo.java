@@ -44,6 +44,16 @@ public class ResponseInfo
         put(101, "No order with the specified OrderId were found.");
     }};
 
+    static HashMap<Integer, String> exitResponses = new HashMap<>()
+    {{
+        put(101, "Inactivity time exceeded, force quit.");
+    }};
+
+    static HashMap<Integer, String> infoResponses = new HashMap<>()
+    {{
+        put(101, "Forbidden command, to use this command you need to login/register first.");
+    }};
+
     public static String GetMeaning(OperationType type, int response)
     {
         switch (type)
@@ -85,6 +95,16 @@ public class ResponseInfo
             case LOGOUT ->
             {
                 return logoutResponses.get(response);
+            }
+
+            case EXIT ->
+            {
+                return exitResponses.get(response);
+            }
+
+            case INFO ->
+            {
+                return infoResponses.get(response);
             }
         }
 

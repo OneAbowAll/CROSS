@@ -1,5 +1,7 @@
 package Exchange;
 
+import java.util.Locale;
+
 public enum OrderKind
 {
 	BID("bid"),
@@ -12,14 +14,10 @@ public enum OrderKind
 
 	public static OrderKind Get(String value)
 	{
-		OrderKind[] values = OrderKind.values();
-
-		for (OrderKind orderKind : values)
-		{
-			if (orderKind.GetName().equals(value))
-				return orderKind;
-		}
-
-		return null;
+		return switch (value.toLowerCase(Locale.ROOT)) {
+			case "bid" -> BID;
+			case "ask" -> ASK;
+			default -> null;
+		};
 	}
 }
