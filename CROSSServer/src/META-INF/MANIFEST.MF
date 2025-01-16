@@ -1,3 +1,4 @@
 Manifest-Version: 1.0
 Main-Class: ServerMain
+Class-Path: .\libraries\gson-2.11.0.jar
 

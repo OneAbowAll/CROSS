@@ -4,6 +4,7 @@
     <root id="archive" name="CROSSServer.jar">
       <element id="module-output" name="CROSS" />
       <element id="module-output" name="CROSSServer" />
+      <element id="library" level="project" name="google.code.gson" />
     </root>
   </artifact>
 </component>

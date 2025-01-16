@@ -4,6 +4,7 @@
     <root id="archive" name="CROSSClient.jar">
       <element id="module-output" name="CROSSClient" />
       <element id="module-output" name="CROSS" />
+      <element id="library" level="project" name="google.code.gson" />
     </root>
   </artifact>
 </component>
