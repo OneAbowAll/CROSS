@@ -110,6 +110,13 @@ public class ResponseListener extends Thread
 			}
 			catch (IOException e)
 			{
+				//La connessione è stata chiuse nel mentre che ascoltavo
+				if(_listenConnection.IsClosed())
+				{
+					return;
+				}
+
+				//Se invece non ho chiuso io la connessione significa che lo ha fatto il server.
 				System.out.println("[WARNING] Server is no longer reachable. Close application by pressing any key.");
 				_listenConnection.TryClose();
 				return;

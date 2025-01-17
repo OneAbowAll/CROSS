@@ -21,7 +21,14 @@ public class History
 
 	static
 	{
-		history = new PriorityQueue<>(Comparator.comparing(Order::GetDate));
+		history = new PriorityQueue<>(new Comparator<Order>()
+		{
+			@Override
+			public int compare(Order o1, Order o2)
+			{
+				return o1.GetDate().compareTo(o2.GetDate());
+			}
+		});
 		Load();
 	}
 
@@ -155,12 +162,17 @@ public class History
 		}
 	}
 
-	public static synchronized Tuple<Integer> GetOrdersRange(Month month, int year)
+	public static Tuple<Integer> GetOrdersRange(Month month, int year)
 	{
 		int indexFrom= -1;
 		int indexTo = -1;
 
-		PriorityQueue<Order> copy = new PriorityQueue<>(history);
+		PriorityQueue<Order> copy;
+		synchronized (history)
+		{
+			copy= new PriorityQueue<>(history);
+		}
+
 		Order order = copy.poll();
 
 		int i = 0;
@@ -179,7 +191,7 @@ public class History
 		return new Tuple<Integer>(indexFrom, indexTo);
 	}
 
-		public static synchronized String GetPeriodInfo(Month month, int year)
+	public static String GetPeriodInfo(Month month, int year)
 	{
 		StringBuilder periodInfo = new StringBuilder();
 		periodInfo.append(String.format("%9s %20s  %27s %20s\n", "", "ASK", "|", "BID"));
@@ -194,7 +206,22 @@ public class History
 			return "NO DATA AVAILABLE";
 		}
 
-		int currentDay = -1;
+		Order[] orders;
+		synchronized (history)
+		{
+			orders = history.toArray(new Order[0]);
+		}
+
+		Arrays.sort(orders, new Comparator<Order>()
+		{
+			@Override
+			public int compare(Order o1, Order o2)
+			{
+				return o1.GetDate().compareTo(o2.GetDate());
+			}
+		});
+
+		int currentDay = (orders[range.GetFirst()]).GetDate().getDayOfMonth();
 		long askOpenPrice = 0;
 		long askClosePrice = 0;
 		long bidOpenPrice = 0;
@@ -205,15 +232,40 @@ public class History
 		long bidMinPrice = Integer.MAX_VALUE;
 		long bidMaxPrice = -1;
 
-		Object[] orders = history.toArray();
 		int j = 0;
 		for (int i = range.GetFirst(); i <= range.GetLast(); i++)
 		{
 			j++;
-			Order order = (Order)orders[i];
-			if(currentDay == -1)
+			Order order = orders[i];
+
+			//Verifico che stiamo lavorando sempre sullo stesso giorno,
+			// nel caso contrario aggiungo le informazioni calcolate e faccio un reset delle variabili
+			// in preparazione al prossimo giorno
+			if(order.GetDate().getDayOfMonth() != currentDay)
 			{
+				//Mi assicuro che non escano valori assurdi (tipo -1) nel caso non ci siano stati ordini ask o bid per quel giorno.
+				if(askMinPrice == Integer.MAX_VALUE) { askMinPrice = 0; }
+				askMaxPrice = Math.max(0, askMaxPrice);
+
+				if(bidMinPrice == Integer.MAX_VALUE) { bidMinPrice = 0; }
+				bidMaxPrice = Math.max(0, bidMaxPrice);
+
+				//Stampo le info
+				periodInfo.append(String.format("%9d => %10d %10d %10d %10d  | %10d %10d %10d %10d\n", currentDay,
+												askOpenPrice, askClosePrice, askMinPrice, askMaxPrice,
+												bidOpenPrice, bidClosePrice, bidMinPrice, bidMaxPrice));
+
+				//Reset per il giorno successivo
 				currentDay = order.GetDate().getDayOfMonth();
+				askOpenPrice = 0;
+				askClosePrice = 0;
+				bidOpenPrice = 0;
+
+				askMinPrice = Integer.MAX_VALUE;
+				askMaxPrice = -1;
+				bidMinPrice = Integer.MAX_VALUE;
+				bidMaxPrice = -1;
+
 			}
 
 			if(order.GetType() == OrderKind.BID)
@@ -232,33 +284,6 @@ public class History
 
 				if(askMinPrice > order.GetPrice()) askMinPrice = order.GetPrice();
 				if(askMaxPrice < order.GetPrice()) askMaxPrice = order.GetPrice();
-			}
-
-			if(order.GetDate().getDayOfMonth() != currentDay)
-			{
-				//Mi assicuro che non escano valori assurdi (tipo -1) nel caso non ci siano stati ordini ask o bid per quel giorno.
-				if(askMinPrice == Integer.MAX_VALUE) { askMinPrice = 0; }
-				askMaxPrice = Math.max(0, askMaxPrice);
-
-				if(bidMinPrice == Integer.MAX_VALUE) { bidMinPrice = 0; }
-				bidMaxPrice = Math.max(0, bidMaxPrice);
-
-				//Stampo le info
-				periodInfo.append(String.format("%9d => %10d %10d %10d %10d  | %10d %10d %10d %10d\n", currentDay,
-												askOpenPrice, askClosePrice, askMinPrice, askMaxPrice,
-												bidOpenPrice, bidClosePrice, bidMinPrice, bidMaxPrice));
-
-				//Reset per il giorno successivo
-				currentDay = -1;
-				askOpenPrice = 0;
-				askClosePrice = 0;
-				bidOpenPrice = 0;
-
-				askMinPrice = Integer.MAX_VALUE;
-				askMaxPrice = -1;
-				bidMinPrice = Integer.MAX_VALUE;
-				bidMaxPrice = -1;
-
 			}
 		}
 

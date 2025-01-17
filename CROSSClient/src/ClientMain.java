@@ -41,7 +41,7 @@ public class ClientMain
 
 	public static void main(String[] args)
 	{
-		System.out.println("▩▩▩▩▩▩ CROSS Client ▩▩▩▩▩▩");
+		System.out.println("###### CROSS Client ######");
 		System.out.println("Trying to connect to CROSS Server...");
 
 		do

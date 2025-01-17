@@ -21,7 +21,7 @@ public class ServerMain
 		Notify.Startup();
 
 		//Apri connessione al mondo
-		System.out.println("▩▩▩▩▩▩ CROSS Server ▩▩▩▩▩▩");
+		System.out.println("###### CROSS Server ######");
 		System.out.println("Waiting for CROSS Clients...");
 		try {
 			acceptSocket = new ServerSocket(GlobalConfigs.CMD_PORT);
