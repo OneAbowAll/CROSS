@@ -37,5 +37,5 @@ public class MarketOrderCommand extends CrossCommand
     }
 
     @Override
-    public String CmdUsage() { return "market <type: {bid/ask, buy/sell}> <size>"; }
+    public String CmdUsage() { return "insertMarketOrder <type: {bid/ask, buy/sell}> <size>"; }
 }

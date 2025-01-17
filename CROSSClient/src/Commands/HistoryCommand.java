@@ -37,6 +37,6 @@ public class HistoryCommand extends CrossCommand
     @Override
     public String CmdUsage()
     {
-        return "history <month: {01, 02, ..., 12}> <year>";
+        return "getPriceHistory <month: {01, 02, ..., 12}> <year>";
     }
 }

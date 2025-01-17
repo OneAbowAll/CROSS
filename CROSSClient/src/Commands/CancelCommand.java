@@ -28,5 +28,5 @@ public class CancelCommand extends CrossCommand
 	}
 
 	@Override
-	public String CmdUsage(){ return "cancel <order_id>"; }
+	public String CmdUsage(){ return "cancelOrder <order_id>"; }
 }

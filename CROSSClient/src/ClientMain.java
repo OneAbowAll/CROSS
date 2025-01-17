@@ -26,11 +26,11 @@ public class ClientMain
 		commands.put("register", new RegisterCommand());
 		commands.put("login", new LoginCommand());
 		commands.put("updateCredentials", new UpdateCredentialsCommand());
-		commands.put("market", new MarketOrderCommand());
-		commands.put("limit", new LimitOrderCommand());
-		commands.put("stop", new StopOrderCommand());
-		commands.put("cancel", new CancelCommand());
-		commands.put("history", new HistoryCommand());
+		commands.put("insertMarketOrder", new MarketOrderCommand());
+		commands.put("insertLimitOrder", new LimitOrderCommand());
+		commands.put("insertStopOrder", new StopOrderCommand());
+		commands.put("cancelOrder", new CancelCommand());
+		commands.put("getPriceHistory", new HistoryCommand());
 		commands.put("status", new StatusCommand());
 		commands.put("logout", new LogoutCommand());
 		commands.put("exit", new ExitCommand());
@@ -41,8 +41,8 @@ public class ClientMain
 
 	public static void main(String[] args)
 	{
-		System.out.println("Ciao sono il client ヾ(≧▽≦*)o");
-		System.out.println("Provo a connettermi (⊙_⊙)？");
+		System.out.println("▩▩▩▩▩▩ CROSS Client ▩▩▩▩▩▩");
+		System.out.println("Trying to connect to CROSS Server...");
 
 		do
 		{
@@ -67,7 +67,8 @@ public class ClientMain
 
 		Scanner scanner = new Scanner(System.in);
 
-		System.out.println("Mi sono connesso ( •̀ .̫ •́ )✧)");
+		System.out.println("CROSS Server was found!");
+		System.out.println("For a list of available commands use help command.");
 
 		while(!cmdConnection.IsClosed())
 		{
@@ -90,7 +91,7 @@ public class ClientMain
 
 			try { cmd.Execute(cmdConnection, cmdArgs); }
 			catch (IOException e){
-				System.out.println("[WARNING] Server is no longer reachable. Closing...");
+				System.out.println("[WARNING] Server is no longer reachable. Close application by pressing any key.");
 				break;
 			}
 			catch (TimeoutException _){ continue; }

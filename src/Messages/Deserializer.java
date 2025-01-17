@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 
 import Messages.Requests.*;
 import Exceptions.UnexpectedRequestException;
+import com.google.gson.reflect.TypeToken;
 
 public class Deserializer
 {

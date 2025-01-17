@@ -35,7 +35,7 @@ public class ResponseInfo
     {{
         put(100, "User has logged out successfully");
         put(101, "To logout you need to login before");
-        put(102, "Inactivity time exceeded, Systems.User has been forcefully logged out");
+        put(102, "Inactivity time exceeded, User has been forcefully logged out");
     }};
 
     static HashMap<Integer, String> cancelResponses = new HashMap<>()

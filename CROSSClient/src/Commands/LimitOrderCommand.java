@@ -38,5 +38,5 @@ public class LimitOrderCommand extends CrossCommand
 	}
 
 	@Override
-	public String CmdUsage() { return "limit <type: {bid/ask, buy/sell}> <size> <price>"; }
+	public String CmdUsage() { return "insertLimitOrder <type: {bid/ask, buy/sell}> <size> <price>"; }
 }

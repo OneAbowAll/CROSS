@@ -38,5 +38,5 @@ public class StopOrderCommand extends CrossCommand
 	}
 
 	@Override
-	public String CmdUsage() { return "stop <type: {bid/ask, buy/sell}> <size> <stop_price>"; }
+	public String CmdUsage() { return "insertStopOrder <type: {bid/ask, buy/sell}> <size> <stop_price>"; }
 }

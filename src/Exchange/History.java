@@ -179,7 +179,7 @@ public class History
 		return new Tuple<Integer>(indexFrom, indexTo);
 	}
 
-	public static synchronized String GetPeriodInfo(Month month, int year)
+		public static synchronized String GetPeriodInfo(Month month, int year)
 	{
 		StringBuilder periodInfo = new StringBuilder();
 		periodInfo.append(String.format("%9s %20s  %27s %20s\n", "", "ASK", "|", "BID"));

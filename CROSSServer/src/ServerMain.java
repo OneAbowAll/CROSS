@@ -21,8 +21,8 @@ public class ServerMain
 		Notify.Startup();
 
 		//Apri connessione al mondo
-		System.out.println("Ciao sono il server ヾ(•ω•`)o");
-		System.out.println("Ora mi metto ad ascoltare... ᕦ(ò_óˇ)ᕤ");
+		System.out.println("▩▩▩▩▩▩ CROSS Server ▩▩▩▩▩▩");
+		System.out.println("Waiting for CROSS Clients...");
 		try {
 			acceptSocket = new ServerSocket(GlobalConfigs.CMD_PORT);
 			acceptSocket.setSoTimeout(ServerConfigs.ACCEPT_TIMEOUT);
@@ -40,10 +40,9 @@ public class ServerMain
 		{
 			try {
 				Socket clientSocket = acceptSocket.accept();
-				System.out.println("Ne ho trovato uno (～￣▽￣)～");
-
 				clientPool.submit(new ClientHandler(clientSocket));
 
+				System.out.println("New client accepted! Currently connected clients: "+ ServerManager.openConnectionsAmount.get() + 1);
 			}
 			catch (IOException e) //Scattato il timeout
 			{

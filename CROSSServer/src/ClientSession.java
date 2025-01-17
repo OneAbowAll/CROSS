@@ -31,6 +31,7 @@ public class ClientSession
 			if(!user.TryConnect())
 				return new LoginResponse(102);
 
+			System.out.println("User "+ user.GetUsername() +" logged in.");
 			return new LoginResponse(100);
 		}
 		else

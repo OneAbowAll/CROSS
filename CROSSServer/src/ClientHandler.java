@@ -181,10 +181,12 @@ public class ClientHandler implements Runnable
 				}
 			}
 			catch (IOException e) {
-				System.out.println("Chiusura connessioneaasdasasd");
-				throw new RuntimeException(e);
+				session.Logout();
+				connection.TryClose();
+				System.out.println("Unexpected client's connection error, attempting automatic closure...");
+				break;
 			}
-			catch (TimeoutException e) {
+			catch (TimeoutException e) { //L'eccezione viene tirata se il client è inattivo per troppo tempo
 				try {
 					//Se l'utente non è loggato si chiude direttamente il tutto, poichè è possible che abbia chiuso
 					// direttamente l'applicazione.
@@ -194,9 +196,9 @@ public class ClientHandler implements Runnable
 						break;
 					}
 
+					//Se era loggato gli facciamo un login automatico per sicurezza e lo avvertiamo della scelta
 					session.Logout();
 					connection.SendMessage(new LogoutResponse(102));
-					break;
 				}
 				catch (IOException ex) {
 					throw new RuntimeException(ex);
@@ -204,6 +206,7 @@ public class ClientHandler implements Runnable
 			}
 		}
 
+		//Quando usciamo decrementiamo il contatore di connessioni aperte
 		ServerManager.openConnectionsAmount.addAndGet(-1);
 		connection.TryClose();
     }

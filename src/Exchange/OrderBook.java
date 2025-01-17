@@ -33,6 +33,7 @@ public class OrderBook
 		limitOrdersAsk = new PriorityQueue<>();
 		try
 		{
+			//Inizializza l'order-book con qualche ordine, per motivi di test gli ordini vengono aggiunti con un delay simulato di 1 sec.
 			limitOrdersAsk.add(Order.Limit(OrderKind.ASK, 100, 2500, ""));
 			Thread.sleep(1000);
 			limitOrdersAsk.add(Order.Limit(OrderKind.ASK, 200, 2500, ""));
@@ -79,20 +80,6 @@ public class OrderBook
 
 		info.append(String.format("%10d%10d%10d\n", price, size, price * size));
 		return info.toString();
-	}
-
-	public static void TestBid()
-	{
-		System.out.println("Prima");
-		System.out.println(GetStatus());
-
-		System.out.println("--------------------------------------------------------");
-
-		Bid(new LimitOrderRequest(OrderKind.BID, 800, 2200, ""));
-		Bid(new LimitOrderRequest(OrderKind.BID, 1000, 2500, ""));
-
-		System.out.println("Dopo");
-		System.out.println(GetStatus());
 	}
 
 	public static String GetStatus()
@@ -511,4 +498,20 @@ public class OrderBook
 				stopOrdersAsk.removeIf(order -> order.GetOrderID() == orderId)  ||
 				stopOrdersBid.removeIf(order -> order.GetOrderID() == orderId);
 	}
+
+	/*
+	public static void TestBid()
+	{
+		System.out.println("Prima");
+		System.out.println(GetStatus());
+
+		System.out.println("--------------------------------------------------------");
+
+		Bid(new LimitOrderRequest(OrderKind.BID, 800, 2200, ""));
+		Bid(new LimitOrderRequest(OrderKind.BID, 1000, 2500, ""));
+
+		System.out.println("Dopo");
+		System.out.println(GetStatus());
+	}
+	*/
 }
