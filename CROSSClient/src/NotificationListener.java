@@ -24,9 +24,11 @@ public class NotificationListener extends Thread
 	@Override
 	public void run()
 	{
-		try(DatagramSocket socket = new DatagramSocket(GlobalConfigs.NOTIF_PORT))
+		try(DatagramSocket socket = new DatagramSocket(null))
 		{
+			//Il reuse è necessario quando testiamo più di un client in locale
 			socket.setReuseAddress(true);
+			socket.bind(new InetSocketAddress("127.0.0.1", GlobalConfigs.NOTIF_PORT));
 			socket.setSoTimeout(2000);
 
 			DatagramPacket receivedNotification = new DatagramPacket(new byte[1024], 1024);

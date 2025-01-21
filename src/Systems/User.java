@@ -5,7 +5,7 @@ public class User
     private final String username;
     private String password;
 
-    private transient volatile boolean isConnected;
+    private transient boolean isConnected;
 
     public User(String username, String password)
     {
